@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 
 export interface InvoicePDFData {
   invoiceNumber: string;
-  invoiceDate: string; // Ожидается в формате ISO (например, "2025-05-16")
+  invoiceDate: string;
   contract: string;
   supplier: {
     name: string;
@@ -30,24 +30,91 @@ export interface InvoicePDFData {
   totalAmountWords: string;
 }
 
-// Вспомогательная функция для форматирования чисел
-function formatCurrency(value: number): string {
-    // Форматирование с двумя десятичными знаками и разделителями тысяч
-    return value.toLocaleString('ru-RU', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).replace(',', '.'); // Заменяем запятую на точку для соответствия формату образца
-}
-
-// Вспомогательная функция для форматирования даты как в образце
-function formatDateToRussian(dateString: string): string {
-    const date = new Date(dateString);
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-    // Заменяем запятую на пробел, если она появляется (например, "16 мая, 2025" -> "16 мая 2025")
-    return date.toLocaleDateString('ru-RU', options).replace(',', '');
-}
-
 export class PDFGenerator {
+  // Точные константы позиционирования на основе анализа PDF
+  private static readonly LAYOUT = {
+    // Основные параметры страницы
+    pageWidth: 210,
+    pageHeight: 297,
+    leftMargin: 20,
+    rightMargin: 20,
+    topMargin: 15,
+    
+    // Позиции для предупреждающего текста
+    warning: {
+      startY: 12,
+      lineHeight: 3.5,
+      fontSize: 7
+    },
+    
+    // Таблица платежного поручения
+    paymentTable: {
+      startY: 35,
+      titleY: 30,
+      height: 40,
+      // Точные позиции колонок
+      cols: {
+        iikX: 140,
+        kbeX: 175,
+        bikX: 140,
+        codeX: 175
+      },
+      // Высоты строк
+      rows: {
+        header1: 8,
+        data1: 16,
+        binRow: 24,
+        header2: 32,
+        data2: 40
+      }
+    },
+    
+    // Заголовок счета
+    invoiceTitle: {
+      y: 85,
+      lineY: 87,
+      fontSize: 11
+    },
+    
+    // Информация о сторонах
+    parties: {
+      supplierY: 95,
+      buyerY: 103,
+      contractY: 111,
+      fontSize: 9,
+      maxWidth: 170
+    },
+    
+    // Таблица услуг
+    servicesTable: {
+      startY: 120,
+      rowHeight: 8,
+      // Точные ширины колонок в мм
+      cols: [
+        { width: 10, align: 'center' },  // №
+        { width: 20, align: 'center' },  // Код
+        { width: 85, align: 'left' },    // Наименование
+        { width: 15, align: 'center' },  // Кол-во
+        { width: 15, align: 'center' },  // Ед.
+        { width: 25, align: 'right' },   // Цена
+        { width: 25, align: 'right' }    // Сумма
+      ]
+    },
+    
+    // Подпись и печать
+    signature: {
+      lineY: 180,
+      textY: 190,
+      signatureX: 110,
+      signatureY: 185,
+      signatureWidth: 35,
+      signatureHeight: 12,
+      stampX: 50,
+      stampY: 188,
+      stampSize: 28
+    }
+  };
+
   static async generateInvoicePDF(data: InvoicePDFData, signature?: string, stamp?: string): Promise<Blob> {
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -56,221 +123,309 @@ export class PDFGenerator {
       compress: true,
       putOnlyUsedFonts: true
     });
-
-    const margin = 10; // Левое и правое поля
-    const pageWidth = 210;
-    const contentWidth = pageWidth - 2 * margin;
-
-    // Установка базового шрифта
+    
+    const L = this.LAYOUT;
+    
+    // Добавляем кастомный шрифт для кириллицы (fallback на helvetica)
     pdf.setFont('helvetica', 'normal');
-
-    // --- Предупреждение ---
-    pdf.setFontSize(8);
-    const warningText = [
-      'Внимание! Оплата данного счета означает согласие с условиями поставки товара.',
-      'Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе.',
-      'Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом,',
-      'при наличии доверенности и документов удостоверяющих личность.'
-    ];
-    let currentY = 15;
-    warningText.forEach((text, index) => {
-      pdf.text(text, margin, currentY + (index * 4));
-    });
-
-    // --- Образец платежного поручения ---
-    currentY = 35; // Начальная Y-координата для этого блока
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Образец платежного поручения', pageWidth / 2, currentY, { align: 'center' });
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-
-    const tableY = currentY + 3; // Y-координата начала таблицы
-    const rowHeight1 = 8;  // Высота строки для "Бенефициар"
-    const rowHeight2 = 10; // Высота строки с данными поставщика
-    const rowHeight3 = 8;  // Высота строки для "Банк бенефициара"
-    const rowHeight4 = 10; // Высота строки с данными банка
-    const tableHeight = rowHeight1 + rowHeight2 + rowHeight3 + rowHeight4; // Общая высота таблицы
-
-    // Ширины колонок в таблице оплаты
-    const col1Width = 110; // Ширина колонки "Бенефициар" и "Банк бенефициара"
-    const col2Width = 50;  // Ширина колонки "ИИК" и "БИК"
-    const col3Width = 30;  // Ширина колонки "КБе" и "Код назначения платежа"
-
-    // Основная рамка таблицы
-    pdf.rect(margin, tableY, contentWidth, tableHeight);
-
-    // Горизонтальные линии внутри таблицы
-    pdf.line(margin, tableY + rowHeight1, margin + contentWidth, tableY + rowHeight1);
-    pdf.line(margin, tableY + rowHeight1 + rowHeight2, margin + contentWidth, tableY + rowHeight1 + rowHeight2);
-    pdf.line(margin, tableY + rowHeight1 + rowHeight2 + rowHeight3, margin + contentWidth, tableY + rowHeight1 + rowHeight2 + rowHeight3);
-
-    // Вертикальные линии внутри таблицы
-    pdf.line(margin + col1Width, tableY, margin + col1Width, tableY + tableHeight);
-    pdf.line(margin + col1Width + col2Width, tableY, margin + col1Width + col2Width, tableY + tableHeight);
-
-    // --- Заголовки строк ---
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Бенефициар:', margin + 1, tableY + 6);
-    pdf.text('ИИК', margin + col1Width + col2Width / 2, tableY + 6, { align: 'center' });
-    pdf.text('КБе', margin + col1Width + col2Width + col3Width / 2, tableY + 6, { align: 'center' });
-
-    pdf.text('Банк бенефициара:', margin + 1, tableY + rowHeight1 + rowHeight2 + 6);
-    pdf.text('БИК', margin + col1Width + col2Width / 2, tableY + rowHeight1 + rowHeight2 + 6, { align: 'center' });
-    pdf.text('Код назначения платежа', margin + col1Width + col2Width + col3Width / 2, tableY + rowHeight1 + rowHeight2 + 6, { align: 'center' });
-
-    // --- Данные поставщика ---
-    pdf.setFont('helvetica', 'normal');
-    // Имя поставщика (первая строка)
-    pdf.text(data.supplier.name, margin + 1, tableY + rowHeight1 + 6);
-    // ИИК (первая строка)
-    pdf.text(data.supplier.iik, margin + col1Width + 1, tableY + rowHeight1 + 6);
-    // КБе (первая строка)
-    pdf.text(data.supplier.kbe, margin + col1Width + col2Width + 1, tableY + rowHeight1 + 6);
-
-    // БИН и адрес (вторая строка)
-    pdf.text(`БИН/ИИН: ${data.supplier.bin}`, margin + 1, tableY + rowHeight1 + rowHeight2 - 2);
-    // (Адрес убран из таблицы оплаты по образцу, перенесен в блок "Поставщик")
-
-    // --- Данные банка ---
-    // Название банка
-    pdf.text(data.supplier.bank, margin + 1, tableY + rowHeight1 + rowHeight2 + rowHeight3 + 6);
-    // БИК
-    pdf.text(data.supplier.bik, margin + col1Width + 1, tableY + rowHeight1 + rowHeight2 + rowHeight3 + 6);
-    // Код назначения платежа
-    pdf.text(data.supplier.paymentCode, margin + col1Width + col2Width + 1, tableY + rowHeight1 + rowHeight2 + rowHeight3 + 6);
-
-    // --- Заголовок счета ---
-    currentY = tableY + tableHeight + 8; // Отступ после таблицы оплаты
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    const invoiceDateFormatted = formatDateToRussian(data.invoiceDate);
-    pdf.text(`Счет на оплату № ${data.invoiceNumber} от ${invoiceDateFormatted}`, margin, currentY);
-
-    // Линия под заголовком
-    pdf.line(margin, currentY + 4, margin + contentWidth, currentY + 4);
-
-    // --- Информация о сторонах ---
-    currentY = currentY + 10; // Отступ после линии
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-
-    // Поставщик
-    const supplierText = `Поставщик: БИН/ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`;
-    pdf.text(supplierText, margin, currentY, { maxWidth: contentWidth });
-
-    // Покупатель
-    currentY += 7;
-    const buyerText = `Покупатель: БИН/ИИН: ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`;
-    pdf.text(buyerText, margin, currentY, { maxWidth: contentWidth });
-
-    // Договор
-    currentY += 7;
-    pdf.text(`Договор: ${data.contract}`, margin, currentY);
-
-    // --- Таблица услуг ---
-    currentY += 10; // Отступ перед таблицей
-    const tableStartY = currentY;
-    const rowHeight = 8; // Высота строки таблицы услуг
-
-    // Ширины колонок таблицы услуг (скорректированы под образец)
-    const serviceColWidths = [10, 15, 85, 20, 15, 25, 20]; // №, Код, Наименование, Кол-во, Ед., Цена, Сумма
-    const servicesTableWidth = serviceColWidths.reduce((a, b) => a + b, 0);
-    let colX = margin;
-
-    // Рамка таблицы услуг
-    pdf.rect(margin, tableStartY, servicesTableWidth, rowHeight * (data.services.length + 2)); // +1 для заголовка, +1 для итого
-
-    // Вертикальные линии таблицы услуг
-    for (let i = 0; i < serviceColWidths.length; i++) {
-      pdf.line(colX, tableStartY, colX, tableStartY + rowHeight * (data.services.length + 2));
-      colX += serviceColWidths[i];
-    }
-    pdf.line(colX, tableStartY, colX, tableStartY + rowHeight * (data.services.length + 2)); // Последняя линия
-
-    // Горизонтальные линии таблицы услуг
-    for (let i = 0; i <= data.services.length + 1; i++) {
-      pdf.line(margin, tableStartY + rowHeight * i, margin + servicesTableWidth, tableStartY + rowHeight * i);
-    }
-
-    // Заголовки таблицы услуг
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(8);
-    pdf.text('№', margin + serviceColWidths[0] / 2, tableStartY + rowHeight / 2 + 2, { align: 'center' });
-    pdf.text('Код', margin + serviceColWidths[0] + serviceColWidths[1] / 2, tableStartY + rowHeight / 2 + 2, { align: 'center' });
-    pdf.text('Наименование', margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] / 2, tableStartY + rowHeight / 2 + 2, { align: 'center' });
-    pdf.text('Кол-во', margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] / 2, tableStartY + rowHeight / 2 + 2, { align: 'center' });
-    pdf.text('Ед.', margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] + serviceColWidths[4] / 2, tableStartY + rowHeight / 2 + 2, { align: 'center' });
-    pdf.text('Цена', margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] + serviceColWidths[4] + serviceColWidths[5] / 2, tableStartY + rowHeight / 2 + 2, { align: 'center' });
-    pdf.text('Сумма', margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] + serviceColWidths[4] + serviceColWidths[5] + serviceColWidths[6] / 2, tableStartY + rowHeight / 2 + 2, { align: 'center' });
-
-    // Строки таблицы услуг
-    pdf.setFont('helvetica', 'normal');
-    let currentTableRowY = tableStartY + rowHeight;
-
-    data.services.forEach((service, index) => {
-      pdf.text((index + 1).toString(), margin + serviceColWidths[0] / 2, currentTableRowY + rowHeight / 2 + 2, { align: 'center' });
-      // pdf.text('', ...); // Код - пустой
-      pdf.text(service.name, margin + serviceColWidths[0] + serviceColWidths[1] + 1, currentTableRowY + rowHeight / 2 + 2, { maxWidth: serviceColWidths[2] - 2 });
-      pdf.text(service.quantity.toLocaleString('ru-RU', { minimumFractionDigits: 1 }), margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] / 2, currentTableRowY + rowHeight / 2 + 2, { align: 'center' });
-      pdf.text(service.unit, margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] + serviceColWidths[4] / 2, currentTableRowY + rowHeight / 2 + 2, { align: 'center' });
-      pdf.text(formatCurrency(service.price), margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] + serviceColWidths[4] + serviceColWidths[5] - 1, currentTableRowY + rowHeight / 2 + 2, { align: 'right' });
-      pdf.text(formatCurrency(service.total), margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] + serviceColWidths[4] + serviceColWidths[5] + serviceColWidths[6] - 1, currentTableRowY + rowHeight / 2 + 2, { align: 'right' });
-
-      currentTableRowY += rowHeight;
-    });
-
-    // Строка "Итого"
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Итого:', margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] + serviceColWidths[4] + (serviceColWidths[5] / 2), currentTableRowY + rowHeight / 2 + 2, { align: 'center' });
-    pdf.text(formatCurrency(data.totalAmount), margin + serviceColWidths[0] + serviceColWidths[1] + serviceColWidths[2] + serviceColWidths[3] + serviceColWidths[4] + serviceColWidths[5] + serviceColWidths[6] - 1, currentTableRowY + rowHeight / 2 + 2, { align: 'right' });
-
-    // --- Итоговая сумма словами и количество ---
-    currentY = tableStartY + rowHeight * (data.services.length + 2) + 8; // Отступ после таблицы
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.text(`Всего наименований ${data.services.length}, на сумму ${formatCurrency(data.totalAmount)} KZT`, margin, currentY);
-    currentY += 6;
-    pdf.text(`Всего к оплате: ${data.totalAmountWords}`, margin, currentY);
-
-    // --- Подпись ---
-    currentY += 15; // Отступ перед линией подписи
-    pdf.line(margin, currentY, margin + contentWidth, currentY); // Линия подписи
-    currentY += 6;
-    pdf.text('Исполнитель:', margin, currentY + 4);
-    pdf.text('/бухгалтер/', margin + contentWidth - 40, currentY + 4); // Правый край
-
-    // Добавление подписи и печати
-    if (signature) {
-      try {
-        // Позиционирование подписи левее надписи "/бухгалтер/"
-        pdf.addImage(signature, 'PNG', margin + contentWidth - 70, currentY - 8, 30, 15);
-      } catch (error) {
-        console.warn('Could not add signature image to PDF:', error);
-      }
-    }
-
-    if (stamp) {
-      try {
-        // Позиционирование печати левее подписи
-        pdf.addImage(stamp, 'PNG', margin + contentWidth - 110, currentY - 15, 35, 35);
-      } catch (error) {
-        console.warn('Could not add stamp image to PDF:', error);
-      }
-    }
-
+    
+    // 1. ПРЕДУПРЕЖДАЮЩИЙ ТЕКСТ
+    this.drawWarningText(pdf, data);
+    
+    // 2. ТАБЛИЦА ПЛАТЕЖНОГО ПОРУЧЕНИЯ
+    this.drawPaymentTable(pdf, data);
+    
+    // 3. ЗАГОЛОВОК СЧЕТА
+    this.drawInvoiceTitle(pdf, data);
+    
+    // 4. ИНФОРМАЦИЯ О СТОРОНАХ
+    this.drawPartiesInfo(pdf, data);
+    
+    // 5. ТАБЛИЦА УСЛУГ
+    const totalY = this.drawServicesTable(pdf, data);
+    
+    // 6. ИТОГОВАЯ ИНФОРМАЦИЯ
+    const signatureY = this.drawTotalInfo(pdf, data, totalY);
+    
+    // 7. ПОДПИСЬ И ПЕЧАТЬ
+    this.drawSignatureSection(pdf, signature, stamp, signatureY);
+    
     return pdf.output('blob');
   }
-
+  
+  private static drawWarningText(pdf: jsPDF, data: InvoicePDFData) {
+    const L = this.LAYOUT;
+    
+    pdf.setFontSize(L.warning.fontSize);
+    const warningLines = [
+      'Внимание! Оплата данного счета означает согласие с условиями поставки товара. Уведомление об оплате обязательно, в',
+      'противном случае не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с Поставщика,',
+      'самовывозом, при наличии доверенности и документов удостоверяющих личность.'
+    ];
+    
+    warningLines.forEach((line, index) => {
+      pdf.text(line, L.leftMargin, L.warning.startY + (index * L.warning.lineHeight));
+    });
+  }
+  
+  private static drawPaymentTable(pdf: jsPDF, data: InvoicePDFData) {
+    const L = this.LAYOUT;
+    const PT = L.paymentTable;
+    const tableWidth = L.pageWidth - L.leftMargin - L.rightMargin;
+    
+    // Заголовок таблицы
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Образец платежного поручения', L.pageWidth / 2, PT.titleY, { align: 'center' });
+    
+    // Основная рамка таблицы
+    pdf.rect(L.leftMargin, PT.startY, tableWidth, PT.height);
+    
+    // Вертикальные линии
+    pdf.line(PT.cols.iikX, PT.startY, PT.cols.iikX, PT.startY + PT.rows.binRow);
+    pdf.line(PT.cols.kbeX, PT.startY, PT.cols.kbeX, PT.startY + PT.rows.binRow);
+    pdf.line(PT.cols.bikX, PT.startY + PT.rows.binRow, PT.cols.bikX, PT.startY + PT.height);
+    pdf.line(PT.cols.codeX, PT.startY + PT.rows.binRow, PT.cols.codeX, PT.startY + PT.height);
+    
+    // Горизонтальные линии
+    pdf.line(L.leftMargin, PT.startY + PT.rows.header1, L.leftMargin + tableWidth, PT.startY + PT.rows.header1);
+    pdf.line(L.leftMargin, PT.startY + PT.rows.data1, L.leftMargin + tableWidth, PT.startY + PT.rows.data1);
+    pdf.line(L.leftMargin, PT.startY + PT.rows.binRow, L.leftMargin + tableWidth, PT.startY + PT.rows.binRow);
+    pdf.line(L.leftMargin, PT.startY + PT.rows.header2, L.leftMargin + tableWidth, PT.startY + PT.rows.header2);
+    
+    // Заполнение таблицы
+    pdf.setFontSize(9);
+    
+    // Первая строка - заголовки
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Бенефициар:', L.leftMargin + 2, PT.startY + 5);
+    pdf.text('ИИК', (PT.cols.iikX + PT.cols.kbeX) / 2, PT.startY + 5, { align: 'center' });
+    pdf.text('Кбе', (PT.cols.kbeX + L.leftMargin + tableWidth) / 2, PT.startY + 5, { align: 'center' });
+    
+    // Вторая строка - данные
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(data.supplier.name, L.leftMargin + 2, PT.startY + 13);
+    pdf.text(data.supplier.iik, PT.cols.iikX + 2, PT.startY + 13);
+    pdf.text(data.supplier.kbe || '19', PT.cols.kbeX + 2, PT.startY + 13);
+    
+    // Третья строка - БИН
+    pdf.text(`БИН: ${data.supplier.bin}`, L.leftMargin + 2, PT.startY + 21);
+    
+    // Четвертая строка - заголовки банка
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Банк бенефициара:', L.leftMargin + 2, PT.startY + 29);
+    pdf.text('БИК', (PT.cols.bikX + PT.cols.codeX) / 2, PT.startY + 29, { align: 'center' });
+    pdf.text('Код назначения платежа', PT.cols.codeX + 2, PT.startY + 29);
+    
+    // Пятая строка - данные банка
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(data.supplier.bank, L.leftMargin + 2, PT.startY + 37);
+    pdf.text(data.supplier.bik, PT.cols.bikX + 2, PT.startY + 37);
+    pdf.text(data.supplier.paymentCode || '859', PT.cols.codeX + 2, PT.startY + 37);
+  }
+  
+  private static drawInvoiceTitle(pdf: jsPDF, data: InvoicePDFData) {
+    const L = this.LAYOUT;
+    
+    pdf.setFontSize(L.invoiceTitle.fontSize);
+    pdf.setFont('helvetica', 'bold');
+    
+    const dateStr = new Date(data.invoiceDate).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).replace('г.', '');
+    
+    pdf.text(`Счет на оплату № ${data.invoiceNumber} от ${dateStr}`, L.leftMargin, L.invoiceTitle.y);
+    
+    // Линия под заголовком
+    const tableWidth = L.pageWidth - L.leftMargin - L.rightMargin;
+    pdf.line(L.leftMargin, L.invoiceTitle.lineY, L.leftMargin + tableWidth, L.invoiceTitle.lineY);
+  }
+  
+  private static drawPartiesInfo(pdf: jsPDF, data: InvoicePDFData) {
+    const L = this.LAYOUT;
+    
+    pdf.setFontSize(L.parties.fontSize);
+    pdf.setFont('helvetica', 'normal');
+    
+    // Поставщик
+    const supplierText = `БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`;
+    pdf.text('Поставщик:', L.leftMargin, L.parties.supplierY);
+    pdf.text(supplierText, L.leftMargin + 25, L.parties.supplierY, { maxWidth: L.parties.maxWidth });
+    
+    // Покупатель
+    const buyerText = `БИН / ИИН: ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`;
+    pdf.text('Покупатель:', L.leftMargin, L.parties.buyerY);
+    pdf.text(buyerText, L.leftMargin + 25, L.parties.buyerY, { maxWidth: L.parties.maxWidth });
+    
+    // Договор
+    pdf.text('Договор:', L.leftMargin, L.parties.contractY);
+    pdf.text(data.contract, L.leftMargin + 25, L.parties.contractY);
+  }
+  
+  private static drawServicesTable(pdf: jsPDF, data: InvoicePDFData): number {
+    const L = this.LAYOUT;
+    const ST = L.servicesTable;
+    const tableWidth = ST.cols.reduce((sum, col) => sum + col.width, 0);
+    const rowCount = data.services.length + 2; // +1 header +1 total
+    const tableHeight = ST.rowHeight * rowCount;
+    
+    // Рисуем внешнюю рамку
+    pdf.rect(L.leftMargin, ST.startY, tableWidth, tableHeight);
+    
+    // Рисуем вертикальные линии
+    let currentX = L.leftMargin;
+    ST.cols.forEach(col => {
+      currentX += col.width;
+      pdf.line(currentX, ST.startY, currentX, ST.startY + tableHeight);
+    });
+    
+    // Рисуем горизонтальные линии
+    for (let i = 1; i < rowCount; i++) {
+      pdf.line(L.leftMargin, ST.startY + (ST.rowHeight * i), 
+               L.leftMargin + tableWidth, ST.startY + (ST.rowHeight * i));
+    }
+    
+    // Заголовки таблицы
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    
+    const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
+    currentX = L.leftMargin;
+    headers.forEach((header, i) => {
+      const col = ST.cols[i];
+      const textX = currentX + (col.width / 2);
+      pdf.text(header, textX, ST.startY + 5, { align: 'center' });
+      currentX += col.width;
+    });
+    
+    // Данные таблицы
+    pdf.setFont('helvetica', 'normal');
+    let currentY = ST.startY + ST.rowHeight;
+    
+    data.services.forEach((service, index) => {
+      currentX = L.leftMargin;
+      
+      // №
+      pdf.text((index + 1).toString(), currentX + 5, currentY + 5, { align: 'center' });
+      currentX += ST.cols[0].width;
+      
+      // Код (пустой)
+      currentX += ST.cols[1].width;
+      
+      // Наименование
+      pdf.text(service.name, currentX + 2, currentY + 5);
+      currentX += ST.cols[2].width;
+      
+      // Количество
+      pdf.text(service.quantity.toFixed(1), currentX + 7.5, currentY + 5, { align: 'center' });
+      currentX += ST.cols[3].width;
+      
+      // Единица
+      pdf.text(service.unit, currentX + 2, currentY + 5);
+      currentX += ST.cols[4].width;
+      
+      // Цена
+      pdf.text(this.formatMoney(service.price), currentX + 23, currentY + 5, { align: 'right' });
+      currentX += ST.cols[5].width;
+      
+      // Сумма
+      pdf.text(this.formatMoney(service.total), currentX + 23, currentY + 5, { align: 'right' });
+      
+      currentY += ST.rowHeight;
+    });
+    
+    // Строка итого
+    pdf.setFont('helvetica', 'bold');
+    const totalX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
+    pdf.text('Итого:', totalX + 12.5, currentY + 5, { align: 'center' });
+    pdf.text(this.formatMoney(data.totalAmount), 
+             L.leftMargin + tableWidth - 2, currentY + 5, { align: 'right' });
+    
+    return currentY + ST.rowHeight;
+  }
+  
+  private static drawTotalInfo(pdf: jsPDF, data: InvoicePDFData, startY: number): number {
+    const L = this.LAYOUT;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    
+    const y1 = startY + 10;
+    const y2 = y1 + 6;
+    
+    pdf.text(`Всего наименований ${data.services.length} на сумму ${this.formatMoney(data.totalAmount)} KZT`, 
+             L.leftMargin, y1);
+    pdf.text(`Всего к оплате ${data.totalAmountWords}`, L.leftMargin, y2);
+    
+    return y2 + 15;
+  }
+  
+  private static drawSignatureSection(pdf: jsPDF, signature: string | undefined, stamp: string | undefined, startY: number) {
+    const L = this.LAYOUT;
+    const tableWidth = L.pageWidth - L.leftMargin - L.rightMargin;
+    
+    // Линия над подписью
+    pdf.line(L.leftMargin, startY, L.leftMargin + tableWidth, startY);
+    
+    // Текст
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    pdf.text('Исполнитель:', L.leftMargin, startY + 12);
+    pdf.text('/бухгалтер/', L.signature.signatureX + 30, startY + 12);
+    
+    // Подпись
+    if (signature) {
+      try {
+        pdf.addImage(signature, 'PNG', 
+                    L.signature.signatureX, 
+                    startY + 2,
+                    L.signature.signatureWidth, 
+                    L.signature.signatureHeight);
+      } catch (error) {
+        console.warn('Could not add signature:', error);
+      }
+    }
+    
+    // Печать
+    if (stamp) {
+      try {
+        pdf.addImage(stamp, 'PNG', 
+                    L.signature.stampX, 
+                    startY + 8,
+                    L.signature.stampSize, 
+                    L.signature.stampSize);
+      } catch (error) {
+        console.warn('Could not add stamp:', error);
+      }
+    }
+  }
+  
+  private static formatMoney(amount: number): string {
+    return amount.toLocaleString('ru-RU', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).replace(',', '.');
+  }
+  
   static downloadPDF(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    
+    try {
+      document.body.appendChild(link);
+      link.click();
+    } finally {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   }
 }
+
+// Совместимая функция для обратной совместимости
+export const generateInvoicePDF = async (data: InvoicePDFData): Promise<Blob> => {
+  return await PDFGenerator.generateInvoicePDF(data);
+};

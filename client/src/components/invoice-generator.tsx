@@ -9,13 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import InvoicePreview from "./invoice-preview";
+
 import { 
   FileText, MessageCircle, LogOut, Edit3, Building, PenTool, Eye, 
   Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List
 } from "lucide-react";
 import { numberToWords } from "@/lib/number-to-words";
 import { validateBinIin } from "@/lib/validation";
+import { PDFGenerator, type InvoicePDFData } from "@/lib/pdf-generator";
 
 type Mode = 'edit' | 'supplier' | 'signature' | 'preview';
 
@@ -269,6 +270,47 @@ export default function InvoiceGenerator() {
     window.print();
   };
 
+  const downloadPDF = async () => {
+    try {
+      // Prepare PDF data using the improved PDF generator
+      const pdfData: InvoicePDFData = {
+        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceDate: invoiceData.invoiceDate,
+        contract: invoiceData.contract,
+        supplier: invoiceData.supplier,
+        buyer: invoiceData.buyer,
+        services: invoiceData.services.map(service => ({
+          name: service.name,
+          quantity: service.quantity,
+          unit: service.unit,
+          price: service.price,
+          total: service.total
+        })),
+        totalAmount: getTotalAmount(),
+        totalAmountWords: numberToWords(getTotalAmount())
+      };
+
+      // Generate PDF using the improved PDF generator
+      const pdf = await PDFGenerator.generateInvoicePDF(pdfData, signature || undefined, stamp || undefined);
+      
+      // Download the PDF
+      const filename = `Счет_${invoiceData.invoiceNumber}_${invoiceData.invoiceDate}.pdf`;
+      PDFGenerator.downloadPDF(pdf, filename);
+      
+      toast({
+        title: "PDF скачан",
+        description: "Файл сохранен на ваше устройство",
+      });
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      toast({
+        title: "Ошибка скачивания",
+        description: "Не удалось создать PDF файл",
+        variant: "destructive"
+      });
+    }
+  };
+
   const sendToTelegram = async () => {
     try {
       // First save the invoice to the database
@@ -282,45 +324,26 @@ export default function InvoiceGenerator() {
         return;
       }
 
-      // Generate PDF data from the current invoice
-      const element = document.getElementById('invoiceDocument');
-      if (!element) {
-        toast({
-          title: "Ошибка",
-          description: "Документ счета не найден",
-          variant: "destructive"
-        });
-        return;
-      }
+      // Prepare PDF data using the improved PDF generator
+      const pdfData: InvoicePDFData = {
+        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceDate: invoiceData.invoiceDate,
+        contract: invoiceData.contract,
+        supplier: invoiceData.supplier,
+        buyer: invoiceData.buyer,
+        services: invoiceData.services.map(service => ({
+          name: service.name,
+          quantity: service.quantity,
+          unit: service.unit,
+          price: service.price,
+          total: service.total
+        })),
+        totalAmount: getTotalAmount(),
+        totalAmountWords: numberToWords(getTotalAmount())
+      };
 
-      // Use html2canvas and jspdf to generate PDF
-      const canvas = await import('html2canvas').then(m => m.default(element, {
-        scale: 2,
-        useCORS: true
-      }));
-      
-      const pdf = await import('jspdf').then(m => {
-        const jsPDF = m.jsPDF;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 295; // A4 height in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-
-        let position = 0;
-        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          doc.addPage();
-          doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-        
-        return doc.output('blob');
-      });
+      // Generate PDF using the improved PDF generator
+      const pdf = await PDFGenerator.generateInvoicePDF(pdfData, signature || undefined, stamp || undefined);
       
       // Convert blob to base64
       const reader = new FileReader();
@@ -888,6 +911,10 @@ export default function InvoiceGenerator() {
           </div>
           
           <div className="flex items-center space-x-3 no-print">
+            <Button onClick={downloadPDF} variant="outline">
+              <FileText className="w-4 h-4 mr-2" />
+              Скачать PDF
+            </Button>
             <Button onClick={printInvoice} variant="outline">
               <Printer className="w-4 h-4 mr-2" />
               Печать
