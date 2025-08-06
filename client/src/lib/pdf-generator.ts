@@ -32,7 +32,13 @@ export interface InvoicePDFData {
 
 export class PDFGenerator {
   static async generateInvoicePDF(data: InvoicePDFData, signature?: string, stamp?: string): Promise<Blob> {
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true, // Включить сжатие для уменьшения размера
+      putOnlyUsedFonts: true // Включить только используемые шрифты
+    });
     
     // Set margins for proper A4 printing (like shown in the screenshot)
     const margin = 10;
@@ -43,12 +49,17 @@ export class PDFGenerator {
     // Set font
     pdf.setFont('helvetica', 'normal');
     
-    // Warning text - smaller font, better spacing
+    // Warning text - оптимизировано для меньшего размера файла
     pdf.setFontSize(7);
-    pdf.text('Внимание! Оплата данного счета означает согласие с условиями поставки товара.', margin, 15);
-    pdf.text('Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе.', margin, 19);
-    pdf.text('Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом,', margin, 23);
-    pdf.text('при наличии доверенности и документов удостоверяющих личность.', margin, 27);
+    const warningText = [
+      'Внимание! Оплата данного счета означает согласие с условиями поставки товара.',
+      'Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе.',
+      'Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом,',
+      'при наличии доверенности и документов удостоверяющих личность.'
+    ];
+    warningText.forEach((text, index) => {
+      pdf.text(text, margin, 15 + (index * 4));
+    });
     
     // Payment details header
     pdf.setFontSize(10);
@@ -61,10 +72,10 @@ export class PDFGenerator {
     // Payment details table exactly like in sample
     const tableY = 45;
     const tableHeight = 40;
-    const tableWidth = contentWidth;
+    const paymentTableWidth = contentWidth;
     
     // Main table border
-    pdf.rect(margin, tableY, tableWidth, tableHeight);
+    pdf.rect(margin, tableY, paymentTableWidth, tableHeight);
     
     // Vertical lines for columns
     pdf.line(margin + 120, tableY, margin + 120, tableY + 25); // ИИК column separator
@@ -73,10 +84,10 @@ export class PDFGenerator {
     pdf.line(margin + 165, tableY + 25, margin + 165, tableY + tableHeight); // Code column separator
     
     // Horizontal lines
-    pdf.line(margin, tableY + 8, margin + tableWidth, tableY + 8); // After headers
-    pdf.line(margin, tableY + 18, margin + tableWidth, tableY + 18); // After supplier name
-    pdf.line(margin, tableY + 25, margin + tableWidth, tableY + 25); // Before bank info
-    pdf.line(margin, tableY + 33, margin + tableWidth, tableY + 33); // After bank headers
+    pdf.line(margin, tableY + 8, margin + paymentTableWidth, tableY + 8); // After headers
+    pdf.line(margin, tableY + 18, margin + paymentTableWidth, tableY + 18); // After supplier name
+    pdf.line(margin, tableY + 25, margin + paymentTableWidth, tableY + 25); // Before bank info
+    pdf.line(margin, tableY + 33, margin + paymentTableWidth, tableY + 33); // After bank headers
     
     // Headers row
     pdf.setFont('helvetica', 'bold');
@@ -124,12 +135,12 @@ export class PDFGenerator {
     // Services table with proper borders like in sample
     const tableStartY = 145;
     const rowHeight = 10;
-    const tableWidth = 170;
+    const servicesTableWidth = 170;
     const colWidths = [15, 25, 65, 20, 20, 25, 25]; // Column widths
     let colX = margin;
     
     // Draw outer table border
-    pdf.rect(margin, tableStartY, tableWidth, rowHeight * (data.services.length + 2)); // +2 for header and total
+    pdf.rect(margin, tableStartY, servicesTableWidth, rowHeight * (data.services.length + 2)); // +2 for header and total
     
     // Draw vertical lines for columns
     for (let i = 0; i < colWidths.length; i++) {
@@ -140,7 +151,7 @@ export class PDFGenerator {
     
     // Draw horizontal lines
     for (let i = 0; i <= data.services.length + 1; i++) {
-      pdf.line(margin, tableStartY + rowHeight * i, margin + tableWidth, tableStartY + rowHeight * i);
+      pdf.line(margin, tableStartY + rowHeight * i, margin + servicesTableWidth, tableStartY + rowHeight * i);
     }
     
     // Table headers - bold and centered

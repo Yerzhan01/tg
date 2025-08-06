@@ -12,7 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import InvoicePreview from "./invoice-preview";
 import { 
   FileText, MessageCircle, LogOut, Edit3, Building, PenTool, Eye, 
-  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send
+  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List
 } from "lucide-react";
 import { numberToWords } from "@/lib/number-to-words";
 import { validateBinIin } from "@/lib/validation";
@@ -867,6 +867,13 @@ export default function InvoiceGenerator() {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = '/invoices'}
+              >
+                <List className="w-5 h-5 mr-2" />
+                Мои счета
+              </Button>
               <Button
                 variant="ghost"
                 onClick={() => logoutMutation.mutate()}
