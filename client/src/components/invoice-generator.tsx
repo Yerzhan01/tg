@@ -1024,9 +1024,9 @@ export default function InvoiceGenerator() {
                   className="signature-container"
                   style={{
                     position: 'absolute',
-                    left: `${signatureSettings.x}px`,
-                    top: `${signatureSettings.y}px`,
-                    transform: `scale(${signatureSettings.scale})`,
+                    left: '50px',
+                    top: '50px',
+                    transform: 'scale(0.8)',
                     zIndex: 10
                   }}
                 >
@@ -1044,9 +1044,9 @@ export default function InvoiceGenerator() {
                   className="stamp-container"
                   style={{
                     position: 'absolute',
-                    left: `${stampSettings.x}px`,
-                    top: `${stampSettings.y}px`,
-                    transform: `scale(${stampSettings.scale})`,
+                    right: '50px',
+                    top: '50px',
+                    transform: 'scale(0.8)',
                     zIndex: 10
                   }}
                 >
