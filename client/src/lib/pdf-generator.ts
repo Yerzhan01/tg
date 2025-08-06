@@ -58,7 +58,7 @@ export class PDFGenerator {
         iikX: 140,
         kbeX: 175,
         bikX: 140,
-        codeX: 175
+        codeX: 162
       },
       rows: {
         header1: 8,
@@ -111,13 +111,8 @@ export class PDFGenerator {
     if (this.fontsLoaded) return true;
     
     try {
-      // Если у нас есть base64 шрифта, загружаем его
-      if (PT_SANS_NORMAL && PT_SANS_NORMAL.length > 100) {
-        pdf.addFileToVFS('PTSans-normal.ttf', PT_SANS_NORMAL);
-        pdf.addFont('PTSans-normal.ttf', 'PTSans', 'normal');
-        this.fontsLoaded = true;
-        return true;
-      }
+      // Custom font loading is now handled by registerPTSansFont
+      return false;
     } catch (error) {
       console.warn('Could not load custom font:', error);
     }
@@ -259,7 +254,7 @@ export class PDFGenerator {
     }
     pdf.text(prepareText('Банк бенефициара:'), L.leftMargin + 2, PT.startY + 29);
     pdf.text(prepareText('БИК'), (PT.cols.bikX + PT.cols.codeX) / 2, PT.startY + 29, { align: 'center' });
-    pdf.text(prepareText('Код назначения платежа'), PT.cols.codeX + 2, PT.startY + 29);
+    pdf.text(prepareText('Код назначения платежа'), PT.cols.codeX + 1, PT.startY + 29);
     
     // Пятая строка - данные банка
     try {
@@ -282,14 +277,14 @@ export class PDFGenerator {
     const date = new Date(data.invoiceDate);
     const day = date.getDate();
     const months = [
-      'yanvarya', 'fevralya', 'marta', 'aprelya', 'maya', 'iyunya',
-      'iyulya', 'avgusta', 'sentyabrya', 'oktyabrya', 'noyabrya', 'dekabrya'
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
     ];
     const month = months[date.getMonth()];
     const year = date.getFullYear();
     const dateStr = `${day} ${month} ${year}`;
     
-    const titleText = prepareText(`Schet na oplatu No ${data.invoiceNumber} ot ${dateStr}`);
+    const titleText = prepareText(`Счет на оплату № ${data.invoiceNumber} от ${dateStr}`);
     pdf.text(titleText, L.leftMargin, L.invoiceTitle.y);
     
     // Линия под заголовком
@@ -345,12 +340,12 @@ export class PDFGenerator {
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); };
     pdf.setFontSize(8);
     
-    const headers = ['No', 'Kod', 'Naimenovanie', 'Kol-vo', 'Ed.', 'Tsena', 'Summa'];
+    const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
     currentX = L.leftMargin;
     headers.forEach((header, i) => {
       const col = ST.cols[i];
       const textX = currentX + (col.width / 2);
-      pdf.text(header, textX, ST.startY + 5, { align: 'center' });
+      pdf.text(prepareText(header), textX, ST.startY + 5, { align: 'center' });
       currentX += col.width;
     });
     
@@ -393,7 +388,7 @@ export class PDFGenerator {
     // Строка итого
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); };
     const totalX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
-    pdf.text('Itogo:', totalX + 12.5, currentY + 5, { align: 'center' });
+    pdf.text(prepareText('Итого:'), totalX + 12.5, currentY + 5, { align: 'center' });
     pdf.text(this.formatMoney(data.totalAmount), 
              L.leftMargin + tableWidth - 2, currentY + 5, { align: 'right' });
     
@@ -409,9 +404,9 @@ export class PDFGenerator {
     const y1 = startY + 10;
     const y2 = y1 + 6;
     
-    pdf.text(prepareText(`Vsego naimenovaniy ${data.services.length} na summu ${this.formatMoney(data.totalAmount)} KZT`), 
+    pdf.text(prepareText(`Всего наименований ${data.services.length} на сумму ${this.formatMoney(data.totalAmount)} KZT`), 
              L.leftMargin, y1);
-    pdf.text(prepareText(`Vsego k oplate ${data.totalAmountWords}`), L.leftMargin, y2);
+    pdf.text(prepareText(`Всего к оплате ${data.totalAmountWords}`), L.leftMargin, y2);
     
     return y2 + 15;
   }
@@ -426,8 +421,8 @@ export class PDFGenerator {
     // Текст
     try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); };
     pdf.setFontSize(9);
-    pdf.text('Ispolnitel:', L.leftMargin, startY + 12);
-    pdf.text('/bukhgalter/', L.signature.signatureX + 30, startY + 12);
+    pdf.text(prepareText('Исполнитель:'), L.leftMargin, startY + 12);
+    pdf.text(prepareText('/бухгалтер/'), L.signature.signatureX + 30, startY + 12);
     
     // Подпись
     if (signature) {
