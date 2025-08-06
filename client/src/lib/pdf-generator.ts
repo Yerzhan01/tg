@@ -1,5 +1,35 @@
 import jsPDF from 'jspdf';
 
+// Добавляем поддержку кириллицы через кастомную настройку jsPDF
+declare global {
+  interface Window {
+    jsPDF: any;
+  }
+}
+
+// Константы для поддержки кириллицы
+const CYRILLIC_SUPPORT = {
+  fontName: 'DejaVuSans',
+  fontStyle: 'normal'
+};
+
+// Функция для простой замены кириллических символов на читаемый латинский текст
+function translateForPDF(text: string): string {
+  const cyrillicMap: Record<string, string> = {
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'E', 'Ж': 'Zh', 'З': 'Z',
+    'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R',
+    'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'Kh', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
+    'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya',
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z',
+    'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r',
+    'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+    'ә': 'ae', 'ғ': 'gh', 'қ': 'q', 'ң': 'ng', 'ө': 'oe', 'ұ': 'u', 'ү': 'ue', 'һ': 'h', 'і': 'i'
+  };
+  
+  return text.split('').map(char => cyrillicMap[char] || char).join('');
+}
+
 export interface InvoicePDFData {
   invoiceNumber: string;
   invoiceDate: string;
@@ -126,7 +156,7 @@ export class PDFGenerator {
     
     const L = this.LAYOUT;
     
-    // Добавляем кастомный шрифт для кириллицы (fallback на helvetica)
+    // Устанавливаем базовый шрифт
     pdf.setFont('helvetica', 'normal');
     
     // 1. ПРЕДУПРЕЖДАЮЩИЙ ТЕКСТ
@@ -158,9 +188,9 @@ export class PDFGenerator {
     
     pdf.setFontSize(L.warning.fontSize);
     const warningLines = [
-      'Внимание! Оплата данного счета означает согласие с условиями поставки товара. Уведомление об оплате обязательно, в',
-      'противном случае не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с Поставщика,',
-      'самовывозом, при наличии доверенности и документов удостоверяющих личность.'
+      translateForPDF('Внимание! Оплата данного счета означает согласие с условиями поставки товара. Уведомление об оплате обязательно, в'),
+      translateForPDF('противном случае не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с Поставщика,'),
+      translateForPDF('самовывозом, при наличии доверенности и документов удостоверяющих личность.')
     ];
     
     warningLines.forEach((line, index) => {
@@ -176,7 +206,7 @@ export class PDFGenerator {
     // Заголовок таблицы
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Образец платежного поручения', L.pageWidth / 2, PT.titleY, { align: 'center' });
+    pdf.text(translateForPDF('Образец платежного поручения'), L.pageWidth / 2, PT.titleY, { align: 'center' });
     
     // Основная рамка таблицы
     pdf.rect(L.leftMargin, PT.startY, tableWidth, PT.height);
@@ -198,28 +228,28 @@ export class PDFGenerator {
     
     // Первая строка - заголовки
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Бенефициар:', L.leftMargin + 2, PT.startY + 5);
-    pdf.text('ИИК', (PT.cols.iikX + PT.cols.kbeX) / 2, PT.startY + 5, { align: 'center' });
-    pdf.text('Кбе', (PT.cols.kbeX + L.leftMargin + tableWidth) / 2, PT.startY + 5, { align: 'center' });
+    pdf.text(translateForPDF('Бенефициар:'), L.leftMargin + 2, PT.startY + 5);
+    pdf.text(translateForPDF('ИИК'), (PT.cols.iikX + PT.cols.kbeX) / 2, PT.startY + 5, { align: 'center' });
+    pdf.text(translateForPDF('Кбе'), (PT.cols.kbeX + L.leftMargin + tableWidth) / 2, PT.startY + 5, { align: 'center' });
     
     // Вторая строка - данные
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.supplier.name, L.leftMargin + 2, PT.startY + 13);
+    pdf.text(translateForPDF(data.supplier.name), L.leftMargin + 2, PT.startY + 13);
     pdf.text(data.supplier.iik, PT.cols.iikX + 2, PT.startY + 13);
     pdf.text(data.supplier.kbe || '19', PT.cols.kbeX + 2, PT.startY + 13);
     
     // Третья строка - БИН
-    pdf.text(`БИН: ${data.supplier.bin}`, L.leftMargin + 2, PT.startY + 21);
+    pdf.text(translateForPDF(`БИН: ${data.supplier.bin}`), L.leftMargin + 2, PT.startY + 21);
     
     // Четвертая строка - заголовки банка
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Банк бенефициара:', L.leftMargin + 2, PT.startY + 29);
-    pdf.text('БИК', (PT.cols.bikX + PT.cols.codeX) / 2, PT.startY + 29, { align: 'center' });
-    pdf.text('Код назначения платежа', PT.cols.codeX + 2, PT.startY + 29);
+    pdf.text(translateForPDF('Банк бенефициара:'), L.leftMargin + 2, PT.startY + 29);
+    pdf.text(translateForPDF('БИК'), (PT.cols.bikX + PT.cols.codeX) / 2, PT.startY + 29, { align: 'center' });
+    pdf.text(translateForPDF('Код назначения платежа'), PT.cols.codeX + 2, PT.startY + 29);
     
     // Пятая строка - данные банка
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.supplier.bank, L.leftMargin + 2, PT.startY + 37);
+    pdf.text(translateForPDF(data.supplier.bank), L.leftMargin + 2, PT.startY + 37);
     pdf.text(data.supplier.bik, PT.cols.bikX + 2, PT.startY + 37);
     pdf.text(data.supplier.paymentCode || '859', PT.cols.codeX + 2, PT.startY + 37);
   }
@@ -236,7 +266,7 @@ export class PDFGenerator {
       year: 'numeric'
     }).replace('г.', '');
     
-    pdf.text(`Счет на оплату № ${data.invoiceNumber} от ${dateStr}`, L.leftMargin, L.invoiceTitle.y);
+    pdf.text(translateForPDF(`Счет на оплату № ${data.invoiceNumber} от ${dateStr}`), L.leftMargin, L.invoiceTitle.y);
     
     // Линия под заголовком
     const tableWidth = L.pageWidth - L.leftMargin - L.rightMargin;
@@ -250,18 +280,18 @@ export class PDFGenerator {
     pdf.setFont('helvetica', 'normal');
     
     // Поставщик
-    const supplierText = `БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`;
-    pdf.text('Поставщик:', L.leftMargin, L.parties.supplierY);
+    const supplierText = translateForPDF(`БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`);
+    pdf.text(translateForPDF('Поставщик:'), L.leftMargin, L.parties.supplierY);
     pdf.text(supplierText, L.leftMargin + 25, L.parties.supplierY, { maxWidth: L.parties.maxWidth });
     
     // Покупатель
-    const buyerText = `БИН / ИИН: ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`;
-    pdf.text('Покупатель:', L.leftMargin, L.parties.buyerY);
+    const buyerText = translateForPDF(`БИН / ИИН: ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`);
+    pdf.text(translateForPDF('Покупатель:'), L.leftMargin, L.parties.buyerY);
     pdf.text(buyerText, L.leftMargin + 25, L.parties.buyerY, { maxWidth: L.parties.maxWidth });
     
     // Договор
-    pdf.text('Договор:', L.leftMargin, L.parties.contractY);
-    pdf.text(data.contract, L.leftMargin + 25, L.parties.contractY);
+    pdf.text(translateForPDF('Договор:'), L.leftMargin, L.parties.contractY);
+    pdf.text(translateForPDF(data.contract), L.leftMargin + 25, L.parties.contractY);
   }
   
   private static drawServicesTable(pdf: jsPDF, data: InvoicePDFData): number {
@@ -291,7 +321,7 @@ export class PDFGenerator {
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
     
-    const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
+    const headers = ['№', translateForPDF('Код'), translateForPDF('Наименование'), translateForPDF('Кол-во'), translateForPDF('Ед.'), translateForPDF('Цена'), translateForPDF('Сумма')];
     currentX = L.leftMargin;
     headers.forEach((header, i) => {
       const col = ST.cols[i];
@@ -315,7 +345,7 @@ export class PDFGenerator {
       currentX += ST.cols[1].width;
       
       // Наименование
-      pdf.text(service.name, currentX + 2, currentY + 5);
+      pdf.text(translateForPDF(service.name), currentX + 2, currentY + 5);
       currentX += ST.cols[2].width;
       
       // Количество
@@ -323,7 +353,7 @@ export class PDFGenerator {
       currentX += ST.cols[3].width;
       
       // Единица
-      pdf.text(service.unit, currentX + 2, currentY + 5);
+      pdf.text(translateForPDF(service.unit), currentX + 2, currentY + 5);
       currentX += ST.cols[4].width;
       
       // Цена
@@ -339,7 +369,7 @@ export class PDFGenerator {
     // Строка итого
     pdf.setFont('helvetica', 'bold');
     const totalX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
-    pdf.text('Итого:', totalX + 12.5, currentY + 5, { align: 'center' });
+    pdf.text(translateForPDF('Итого:'), totalX + 12.5, currentY + 5, { align: 'center' });
     pdf.text(this.formatMoney(data.totalAmount), 
              L.leftMargin + tableWidth - 2, currentY + 5, { align: 'right' });
     
@@ -355,9 +385,9 @@ export class PDFGenerator {
     const y1 = startY + 10;
     const y2 = y1 + 6;
     
-    pdf.text(`Всего наименований ${data.services.length} на сумму ${this.formatMoney(data.totalAmount)} KZT`, 
+    pdf.text(translateForPDF(`Всего наименований ${data.services.length} на сумму ${this.formatMoney(data.totalAmount)} KZT`), 
              L.leftMargin, y1);
-    pdf.text(`Всего к оплате ${data.totalAmountWords}`, L.leftMargin, y2);
+    pdf.text(translateForPDF(`Всего к оплате ${data.totalAmountWords}`), L.leftMargin, y2);
     
     return y2 + 15;
   }
@@ -372,8 +402,8 @@ export class PDFGenerator {
     // Текст
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
-    pdf.text('Исполнитель:', L.leftMargin, startY + 12);
-    pdf.text('/бухгалтер/', L.signature.signatureX + 30, startY + 12);
+    pdf.text(translateForPDF('Исполнитель:'), L.leftMargin, startY + 12);
+    pdf.text(translateForPDF('/бухгалтер/'), L.signature.signatureX + 30, startY + 12);
     
     // Подпись
     if (signature) {
