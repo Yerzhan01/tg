@@ -360,6 +360,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send invoice via Telegram
   app.post('/api/telegram/send-invoice', async (req, res) => {
     try {
+      console.log('Send invoice request received');
+      console.log('Session userId:', req.session.userId);
+      console.log('Session telegramId:', req.session.telegramId);
+      
       if (!req.session.userId) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
@@ -373,7 +377,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user's Telegram ID from session
       const telegramId = req.session.telegramId;
       if (!telegramId) {
-        return res.status(400).json({ message: 'Telegram ID not found in session' });
+        console.log('No Telegram ID found in session');
+        return res.status(400).json({ message: 'Telegram ID not found in session. Please log out and log in again.' });
       }
 
       // Create a mock invoice object since we're working with temporary data
@@ -387,16 +392,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Convert base64 PDF data to buffer
       const pdfBuffer = Buffer.from(pdfData.split(',')[1], 'base64');
+      console.log('PDF buffer size:', pdfBuffer.length);
       
       if (telegramBot && telegramId) {
+        console.log('Attempting to send PDF to Telegram ID:', telegramId);
         await telegramBot.sendInvoiceWithPDF(telegramId, invoice, pdfBuffer);
+        console.log('PDF sent successfully');
         res.json({ success: true, message: 'Invoice sent to Telegram' });
       } else {
+        console.log('Telegram bot not available:', !!telegramBot, 'or user not linked:', !!telegramId);
         res.status(400).json({ message: 'Telegram bot not available or user not linked' });
       }
     } catch (error) {
       console.error('Failed to send invoice via Telegram:', error);
-      res.status(500).json({ message: 'Failed to send invoice' });
+      res.status(500).json({ message: 'Failed to send invoice: ' + error.message });
     }
   });
 

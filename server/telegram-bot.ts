@@ -145,12 +145,17 @@ class InvoiceTelegramBot {
         `🏢 Поставщик: ${invoice.supplierName}\n` +
         `🏪 Покупатель: ${invoice.buyerName}`;
 
+      console.log('Sending PDF document to Telegram ID:', telegramId);
+      console.log('PDF buffer size:', pdfBuffer.length);
+      
       await this.bot.sendDocument(telegramId, pdfBuffer, {
-        caption: message,
-        parse_mode: 'HTML'
+        caption: message
       }, {
-        filename: `Счет_${invoice.invoiceNumber}_${new Date().toISOString().slice(0,10)}.pdf`
+        filename: `Счет_${invoice.invoiceNumber}_${new Date().toISOString().slice(0,10)}.pdf`,
+        contentType: 'application/pdf'
       });
+      
+      console.log('PDF document sent successfully');
     } catch (error) {
       console.error('Failed to send invoice with PDF:', error);
       throw error;

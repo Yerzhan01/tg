@@ -267,7 +267,7 @@ export default function InvoiceGenerator() {
         const base64data = reader.result as string;
         
         try {
-          await apiRequest('/api/telegram/send-invoice', {
+          const response = await apiRequest('/api/telegram/send-invoice', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -276,16 +276,19 @@ export default function InvoiceGenerator() {
             })
           });
           
+          console.log('Telegram send response:', response);
+          
           toast({
             title: "Успешно отправлено!",
             description: "PDF файл отправлен в ваш Telegram",
             variant: "default"
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to send to Telegram:', error);
+          const errorMessage = error.response?.data?.message || error.message || 'Неизвестная ошибка';
           toast({
             title: "Ошибка отправки",
-            description: "Не удалось отправить файл в Telegram. Проверьте подключение к боту.",
+            description: errorMessage,
             variant: "destructive"
           });
         }
