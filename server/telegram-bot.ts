@@ -59,27 +59,36 @@ class InvoiceTelegramBot {
       const chatId = msg.chat.id;
       const telegramId = msg.from?.id.toString();
 
-      if (!telegramId) return;
+      console.log('=== TELEGRAM /INVOICES COMMAND ===');
+      console.log('Chat ID:', chatId);
+      console.log('Telegram ID:', telegramId);
 
-      console.log('Telegram /invoices command from user:', telegramId);
-
-      const user = await storage.getUserByTelegramId(telegramId);
-      if (!user) {
-        console.log('User not found for telegramId:', telegramId);
-        await this.bot?.sendMessage(chatId, "Пожалуйста, авторизуйтесь на веб-платформе");
+      if (!telegramId) {
+        console.log('ERROR: No telegramId provided');
         return;
       }
 
-      console.log('User found:', user.id);
+      try {
+        const user = await storage.getUserByTelegramId(telegramId);
+        console.log('User lookup result:', user ? `Found user ${user.id}` : 'User not found');
+        
+        if (!user) {
+          await this.bot?.sendMessage(chatId, "Пожалуйста, авторизуйтесь на веб-платформе");
+          return;
+        }
 
-      const invoices = await storage.getInvoicesByUserId(user.id);
-      
-      if (invoices.length === 0) {
-        await this.bot?.sendMessage(chatId, "У вас пока нет созданных счетов");
-        return;
-      }
+        const invoices = await storage.getInvoicesByUserId(user.id);
+        console.log('Found invoices:', invoices.length);
+        
+        if (invoices.length === 0) {
+          console.log('No invoices found, sending empty message');
+          await this.bot?.sendMessage(chatId, "У вас пока нет созданных счетов");
+          return;
+        }
 
-      if (invoices.length <= 5) {
+        console.log('Processing invoices display...');
+
+        if (invoices.length <= 5) {
         // Show detailed list with buttons for few invoices
         for (const invoice of invoices) {
           const message = `🧾 Счет №${invoice.invoiceNumber}\n` +
@@ -114,6 +123,11 @@ class InvoiceTelegramBot {
         }
 
         await this.bot?.sendMessage(chatId, message);
+        }
+        
+      } catch (error) {
+        console.error('Error in /invoices command:', error);
+        await this.bot?.sendMessage(chatId, "Произошла ошибка при получении списка счетов. Попробуйте позже.");
       }
     });
 
