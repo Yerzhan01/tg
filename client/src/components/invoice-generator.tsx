@@ -215,12 +215,73 @@ export default function InvoiceGenerator() {
     }
   };
 
+  const saveInvoiceToDatabase = async () => {
+    try {
+      // Prepare invoice data for saving
+      const invoiceToSave = {
+        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceDate: invoiceData.invoiceDate,
+        contract: invoiceData.contract,
+        totalAmount: getTotalAmount(),
+        totalAmountWords: numberToWords(getTotalAmount()),
+        status: 'draft' as const,
+        supplier: {
+          name: invoiceData.supplier.name,
+          bin: invoiceData.supplier.bin,
+          address: invoiceData.supplier.address,
+          bank: invoiceData.supplier.bank,
+          bik: invoiceData.supplier.bik,
+          iik: invoiceData.supplier.iik,
+          paymentCode: invoiceData.supplier.paymentCode
+        },
+        buyer: {
+          name: invoiceData.buyer.name,
+          bin: invoiceData.buyer.bin,
+          address: invoiceData.buyer.address
+        },
+        items: invoiceData.services.map(service => ({
+          name: service.name,
+          quantity: service.quantity,
+          unit: service.unit,
+          price: service.price,
+          total: service.total
+        }))
+      };
+
+      const response = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoiceToSave)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save invoice');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+      return null;
+    }
+  };
+
   const printInvoice = () => {
     window.print();
   };
 
   const sendToTelegram = async () => {
     try {
+      // First save the invoice to the database
+      const savedInvoice = await saveInvoiceToDatabase();
+      if (!savedInvoice) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось сохранить счет",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Generate PDF data from the current invoice
       const element = document.getElementById('invoiceDocument');
       if (!element) {
@@ -273,7 +334,7 @@ export default function InvoiceGenerator() {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              invoiceId: 'temp-' + Date.now(),
+              invoiceId: savedInvoice.id,
               pdfData: base64data
             })
           });

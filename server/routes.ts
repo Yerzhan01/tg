@@ -212,17 +212,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const invoiceData = insertInvoiceSchema.parse({
-        ...req.body,
+      const { supplier, buyer, items, ...invoiceFields } = req.body;
+      
+      // Create or find supplier
+      let supplierRecord = await storage.createSupplier({
+        ...supplier,
         userId: req.session.userId
       });
 
+      // Create or find buyer
+      let buyerRecord = await storage.createBuyer({
+        ...buyer,
+        userId: req.session.userId
+      });
+
+      // Create invoice with references
+      const invoiceData = {
+        ...invoiceFields,
+        userId: req.session.userId,
+        supplierId: supplierRecord.id,
+        buyerId: buyerRecord.id,
+        invoiceDate: new Date(invoiceFields.invoiceDate)
+      };
+
       const invoice = await storage.createInvoice(invoiceData);
-      res.json(invoice);
+      
+      // Create invoice items
+      if (items && items.length > 0) {
+        for (const [index, item] of items.entries()) {
+          await storage.createInvoiceItem({
+            ...item,
+            invoiceId: invoice.id,
+            sortOrder: index
+          });
+        }
+      }
+
+      // Return invoice with full details
+      const fullInvoice = await storage.getInvoiceById(invoice.id);
+      res.json(fullInvoice);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid invoice data", errors: error.errors });
       }
+      console.error('Error creating invoice:', error);
       res.status(500).json({ message: "Failed to create invoice" });
     }
   });

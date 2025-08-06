@@ -144,7 +144,6 @@ export class MemStorage implements IStorage {
     const supplier = await this.getSupplierById(invoice.supplierId);
     const buyer = await this.getBuyerById(invoice.buyerId);
     const items = await this.getInvoiceItemsByInvoiceId(id);
-    const signatureSettings = await this.getSignatureSettingsByUserId(invoice.userId);
 
     if (!supplier || !buyer) return undefined;
 
@@ -152,8 +151,7 @@ export class MemStorage implements IStorage {
       ...invoice,
       supplier,
       buyer,
-      items,
-      signatureSettings
+      items
     };
   }
 

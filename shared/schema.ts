@@ -127,6 +127,14 @@ export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 export type SignatureSettings = typeof signatureSettings.$inferSelect;
 export type InsertSignatureSettings = z.infer<typeof insertSignatureSettingsSchema>;
 
+// Complex types for detailed invoice with relations
+export type InvoiceWithDetails = Invoice & {
+  supplier: Supplier;
+  buyer: Buyer;
+  items: InvoiceItem[];
+};
+export type InsertSignatureSettings = z.infer<typeof insertSignatureSettingsSchema>;
+
 // Complete invoice with relations
 export type InvoiceWithDetails = Invoice & {
   supplier: Supplier;
