@@ -58,94 +58,134 @@ export class PDFGenerator {
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
     
-    // Create a bordered box for payment details
-    pdf.rect(margin, 45, contentWidth, 35);
+    // Create a bordered table for payment details like in the sample
+    const tableWidth = contentWidth;
+    const tableHeight = 35;
+    pdf.rect(margin, 45, tableWidth, tableHeight);
     
-    // Beneficiary info - exact layout like in the sample
-    pdf.text('Бенефициар:', margin + 5, 52);
-    pdf.text('ИИК', margin + 120, 52);
-    pdf.text('Кбе', margin + 160, 52);
-    pdf.text(data.supplier.name, margin + 5, 57);
-    pdf.text(data.supplier.iik, margin + 120, 57);
-    pdf.text(data.supplier.kbe, margin + 160, 57);
-    pdf.text(`БИН: ${data.supplier.bin}`, margin + 5, 62);
+    // Draw internal lines
+    pdf.line(margin + 130, 45, margin + 130, 45 + tableHeight); // ИИК column
+    pdf.line(margin + 170, 45, margin + 170, 45 + tableHeight); // КБЕ column
+    pdf.line(margin, 58, margin + tableWidth, 58); // Horizontal line after headers
+    pdf.line(margin, 68, margin + tableWidth, 68); // Horizontal line after second row
+    pdf.line(margin + 130, 68, margin + 130, 80); // БИК column divider
+    pdf.line(margin + 170, 68, margin + 170, 80); // Payment code column divider
     
-    pdf.text('Банк бенефициара:', margin + 5, 67);
-    pdf.text('БИК', margin + 120, 67);
-    pdf.text('Код назначения платежа', margin + 160, 67);
-    pdf.text(data.supplier.bank, margin + 5, 72);
-    pdf.text(data.supplier.bik, margin + 120, 72);
-    pdf.text(data.supplier.paymentCode, margin + 160, 72);
+    // Headers - bold
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Бенефициар:', margin + 2, 52);
+    pdf.text('ИИК', margin + 132, 52);
+    pdf.text('КБе', margin + 172, 52);
+    
+    // Data rows - normal font
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(data.supplier.name, margin + 2, 57);
+    pdf.text(data.supplier.iik, margin + 132, 57);
+    pdf.text(data.supplier.kbe, margin + 172, 57);
+    pdf.text(`БИН: ${data.supplier.bin}`, margin + 2, 62);
+    
+    // Third row
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Банк бенефициара:', margin + 2, 73);
+    pdf.text('БИК', margin + 132, 73);
+    pdf.text('Код назначения платежа', margin + 172, 73);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(data.supplier.bank, margin + 2, 78);
+    pdf.text(data.supplier.bik, margin + 132, 78);
+    pdf.text(data.supplier.paymentCode, margin + 172, 78);
     
     // Invoice title
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text(`Счет на оплату № ${data.invoiceNumber} от ${new Date(data.invoiceDate).toLocaleDateString('ru-RU')}`, pageWidth/2, 95, { align: 'center' });
     
+    // Add line separator
+    pdf.line(margin, 105, margin + contentWidth, 105);
+    
     // Parties information
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     
-    pdf.text(`Поставщик: БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`, 20, 115, { maxWidth: 170 });
-    pdf.text(`Покупатель: БИН / ИИН: ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`, 20, 125, { maxWidth: 170 });
-    pdf.text(`Договор: ${data.contract}`, 20, 135);
+    pdf.text(`Поставщик:    БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`, margin, 115, { maxWidth: 170 });
+    pdf.text(`Покупатель: БИН / ИИН: ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`, margin, 125, { maxWidth: 170 });
+    pdf.text(`Договор:      ${data.contract}`, margin, 135);
     
-    // Services table
+    // Services table with proper borders like in sample
     const tableStartY = 145;
-    const rowHeight = 8;
+    const rowHeight = 10;
+    const tableWidth = 170;
+    const colWidths = [15, 25, 65, 20, 20, 25, 25]; // Column widths
+    let colX = margin;
     
-    // Table headers
+    // Draw outer table border
+    pdf.rect(margin, tableStartY, tableWidth, rowHeight * (data.services.length + 2)); // +2 for header and total
+    
+    // Draw vertical lines for columns
+    for (let i = 0; i < colWidths.length; i++) {
+      pdf.line(colX, tableStartY, colX, tableStartY + rowHeight * (data.services.length + 2));
+      colX += colWidths[i];
+    }
+    pdf.line(colX, tableStartY, colX, tableStartY + rowHeight * (data.services.length + 2)); // Last vertical line
+    
+    // Draw horizontal lines
+    for (let i = 0; i <= data.services.length + 1; i++) {
+      pdf.line(margin, tableStartY + rowHeight * i, margin + tableWidth, tableStartY + rowHeight * i);
+    }
+    
+    // Table headers - bold and centered
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
-    pdf.rect(20, tableStartY, 170, rowHeight);
     
-    pdf.text('№', 25, tableStartY + 5);
-    pdf.text('Код', 35, tableStartY + 5);
-    pdf.text('Наименование', 70, tableStartY + 5);
-    pdf.text('Кол-во', 120, tableStartY + 5);
-    pdf.text('Ед.', 135, tableStartY + 5);
-    pdf.text('Цена', 150, tableStartY + 5);
-    pdf.text('Сумма', 170, tableStartY + 5);
+    pdf.text('№', margin + 7, tableStartY + 6, { align: 'center' });
+    pdf.text('Код', margin + 27, tableStartY + 6, { align: 'center' });
+    pdf.text('Наименование', margin + 77, tableStartY + 6, { align: 'center' });
+    pdf.text('Кол-во', margin + 105, tableStartY + 6, { align: 'center' });
+    pdf.text('Ед.', margin + 125, tableStartY + 6, { align: 'center' });
+    pdf.text('Цена', margin + 147, tableStartY + 6, { align: 'center' });
+    pdf.text('Сумма', margin + 172, tableStartY + 6, { align: 'center' });
     
     // Table rows
     pdf.setFont('helvetica', 'normal');
     let currentY = tableStartY + rowHeight;
     
     data.services.forEach((service, index) => {
-      pdf.rect(20, currentY, 170, rowHeight);
-      
-      pdf.text((index + 1).toString(), 25, currentY + 5);
-      pdf.text('', 35, currentY + 5); // Code column
-      pdf.text(service.name, 40, currentY + 5, { maxWidth: 75 });
-      pdf.text(service.quantity.toString(), 125, currentY + 5, { align: 'center' });
-      pdf.text(service.unit, 135, currentY + 5);
-      pdf.text(service.price.toLocaleString('ru-RU'), 155, currentY + 5, { align: 'right' });
-      pdf.text(service.total.toLocaleString('ru-RU'), 185, currentY + 5, { align: 'right' });
+      pdf.text((index + 1).toString(), margin + 7, currentY + 6, { align: 'center' });
+      pdf.text('', margin + 27, currentY + 6); // Empty code column
+      pdf.text(service.name, margin + 42, currentY + 6, { maxWidth: 60 });
+      pdf.text(service.quantity.toString(), margin + 105, currentY + 6, { align: 'center' });
+      pdf.text(service.unit, margin + 115, currentY + 6);
+      pdf.text(service.price.toLocaleString('ru-RU') + ',00', margin + 165, currentY + 6, { align: 'right' });
+      pdf.text(service.total.toLocaleString('ru-RU') + ',00', margin + 190, currentY + 6, { align: 'right' });
       
       currentY += rowHeight;
     });
     
-    // Total row
+    // Total row - bold
     pdf.setFont('helvetica', 'bold');
-    pdf.rect(20, currentY, 170, rowHeight);
-    pdf.text('Итого:', 155, currentY + 5, { align: 'right' });
-    pdf.text(data.totalAmount.toLocaleString('ru-RU'), 185, currentY + 5, { align: 'right' });
+    pdf.text('Итого:', margin + 147, currentY + 6, { align: 'center' });
+    pdf.text(data.totalAmount.toLocaleString('ru-RU') + ',00', margin + 190, currentY + 6, { align: 'right' });
     
     currentY += rowHeight + 10;
     
-    // Summary
+    // Summary with proper formatting
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Всего наименований ${data.services.length} на сумму ${data.totalAmount.toLocaleString('ru-RU')} KZT`, 20, currentY);
-    pdf.text(`Всего к оплате ${data.totalAmountWords}`, 20, currentY + 5);
+    pdf.setFontSize(9);
+    pdf.text(`Всего наименований ${data.services.length} на сумму ${data.totalAmount.toLocaleString('ru-RU')},00 KZT`, margin, currentY);
+    pdf.text(`Всего к оплате ${data.totalAmountWords}`, margin, currentY + 8);
     
-    // Signature line
-    currentY += 20;
-    pdf.text('Исполнитель: _________________________________ /бухгалтер/', 20, currentY);
+    // Add line separator above signature
+    currentY += 25;
+    pdf.line(margin, currentY, margin + contentWidth, currentY);
     
-    // Add signature and stamp if provided
+    // Signature section - exactly like in sample
+    currentY += 15;
+    pdf.text('Исполнитель:', margin, currentY + 10);
+    pdf.text('/бухгалтер/', margin + 140, currentY + 10);
+    
+    // Add signature and stamp exactly like in sample
     if (signature) {
       try {
-        pdf.addImage(signature, 'PNG', 120, currentY - 10, 30, 10);
+        pdf.addImage(signature, 'PNG', margin + 90, currentY - 5, 40, 15);
       } catch (error) {
         console.warn('Could not add signature image to PDF:', error);
       }
@@ -153,7 +193,7 @@ export class PDFGenerator {
     
     if (stamp) {
       try {
-        pdf.addImage(stamp, 'PNG', 160, currentY - 15, 15, 15);
+        pdf.addImage(stamp, 'PNG', margin + 40, currentY + 5, 30, 30);
       } catch (error) {
         console.warn('Could not add stamp image to PDF:', error);
       }
