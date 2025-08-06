@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 
-export interface InvoiceExcelData {
+export interface ExcelInvoiceData {
   invoiceNumber: string;
   invoiceDate: string;
   contract: string;
@@ -19,127 +19,104 @@ export interface InvoiceExcelData {
     bin: string;
     address: string;
   };
-  services: {
+  services: Array<{
     name: string;
     quantity: number;
     unit: string;
     price: number;
     total: number;
-  }[];
+  }>;
   totalAmount: number;
   totalAmountWords: string;
 }
 
 export class ExcelGenerator {
-  static generateInvoiceExcel(data: InvoiceExcelData): Blob {
-    // Create a new workbook
+  static generateInvoiceExcel(data: ExcelInvoiceData): ArrayBuffer {
+    // Создаем новую книгу
     const wb = XLSX.utils.book_new();
     
-    // Create invoice sheet
-    const invoiceData = [
-      [`Счет на оплату № ${data.invoiceNumber} от ${new Date(data.invoiceDate).toLocaleDateString('ru-RU')}`],
-      [],
-      ['Поставщик:', data.supplier.name],
-      ['БИН/ИИН:', data.supplier.bin],
-      ['Адрес:', data.supplier.address],
-      ['Банк:', data.supplier.bank],
-      ['БИК:', data.supplier.bik],
-      ['ИИК:', data.supplier.iik],
-      ['КБЕ:', data.supplier.kbe],
-      ['Код назначения платежа:', data.supplier.paymentCode],
-      [],
-      ['Покупатель:', data.buyer.name],
-      ['БИН/ИИН:', data.buyer.bin],
-      ['Адрес:', data.buyer.address],
-      [],
-      ['Договор:', data.contract],
-      [],
-      ['№', 'Наименование', 'Количество', 'Единица', 'Цена', 'Сумма'],
+    // Подготавливаем данные для листа
+    const worksheetData = [
+      // Заголовок
+      [`СЧЕТ НА ОПЛАТУ № ${data.invoiceNumber} от ${data.invoiceDate}`],
+      [data.contract ? `По договору: ${data.contract}` : ''],
+      [''],
+      
+      // Поставщик
+      ['ПОСТАВЩИК:'],
+      [`Наименование: ${data.supplier.name}`],
+      [`БИН: ${data.supplier.bin}`],
+      [`Адрес: ${data.supplier.address}`],
+      [`Банк: ${data.supplier.bank}`],
+      [`БИК: ${data.supplier.bik}`],
+      [`ИИК: ${data.supplier.iik}`],
+      [`КБЕ: ${data.supplier.kbe}`],
+      [`Код назначения платежа: ${data.supplier.paymentCode}`],
+      [''],
+      
+      // Покупатель
+      ['ПОКУПАТЕЛЬ:'],
+      [`Наименование: ${data.buyer.name}`],
+      [`БИН: ${data.buyer.bin}`],
+      [`Адрес: ${data.buyer.address}`],
+      [''],
+      
+      // Заголовки таблицы услуг
+      ['№', 'Наименование', 'Количество', 'Ед. изм.', 'Цена (₸)', 'Сумма (₸)'],
     ];
     
-    // Add services
+    // Добавляем услуги
     data.services.forEach((service, index) => {
-      invoiceData.push([
-        (index + 1).toString(),
+      worksheetData.push([
+        index + 1,
         service.name,
-        service.quantity.toString(),
+        service.quantity,
         service.unit,
-        service.price.toString(),
-        service.total.toString()
+        service.price,
+        service.total
       ]);
     });
     
-    // Add total
-    invoiceData.push(
-      [],
-      ['', '', '', '', 'Итого:', data.totalAmount.toString()],
-      [],
-      [`Всего наименований ${data.services.length} на сумму ${data.totalAmount.toLocaleString('ru-RU')} KZT`],
-      [`Всего к оплате ${data.totalAmountWords}`]
+    // Добавляем итоги
+    worksheetData.push(
+      [''],
+      ['', '', '', '', 'ИТОГО:', data.totalAmount],
+      [''],
+      [`Сумма прописью: ${data.totalAmountWords}`]
     );
     
-    const ws = XLSX.utils.aoa_to_sheet(invoiceData);
+    // Создаем лист
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
     
-    // Set column widths
-    ws['!cols'] = [
+    // Настраиваем ширину колонок
+    const colWidths = [
       { wch: 5 },   // №
-      { wch: 40 },  // Наименование
+      { wch: 30 },  // Наименование
       { wch: 12 },  // Количество
-      { wch: 10 },  // Единица
+      { wch: 10 },  // Ед. изм.
       { wch: 15 },  // Цена
-      { wch: 15 }   // Сумма
+      { wch: 15 },  // Сумма
     ];
+    ws['!cols'] = colWidths;
     
+    // Добавляем лист в книгу
     XLSX.utils.book_append_sheet(wb, ws, 'Счет');
     
-    // Create services detail sheet
-    const servicesData = [
-      ['Детализация услуг/товаров'],
-      [],
-      ['№', 'Наименование', 'Количество', 'Единица измерения', 'Цена за единицу', 'Общая сумма'],
-    ];
-    
-    data.services.forEach((service, index) => {
-      servicesData.push([
-        (index + 1).toString(),
-        service.name,
-        service.quantity.toString(),
-        service.unit,
-        service.price.toString(),
-        service.total.toString()
-      ]);
-    });
-    
-    servicesData.push(
-      [],
-      ['', '', '', '', 'ИТОГО:', data.totalAmount.toString()]
-    );
-    
-    const ws2 = XLSX.utils.aoa_to_sheet(servicesData);
-    ws2['!cols'] = [
-      { wch: 5 },
-      { wch: 50 },
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 15 },
-      { wch: 15 }
-    ];
-    
-    XLSX.utils.book_append_sheet(wb, ws2, 'Детализация');
-    
-    // Generate Excel file
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    return new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    // Генерируем файл
+    return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
   }
   
-  static downloadExcel(blob: Blob, filename: string) {
+  static downloadExcel(buffer: ArrayBuffer, filename: string): void {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
+    
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
     URL.revokeObjectURL(url);
   }
 }

@@ -403,7 +403,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { invoiceId, pdfData } = req.body;
       
-      console.log('Send invoice request received');
       console.log('Request body keys:', Object.keys(req.body));
       console.log('Invoice ID:', invoiceId);
       console.log('PDF data length:', pdfData ? pdfData.length : 'undefined');
@@ -420,13 +419,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Telegram ID not found in session. Please log out and log in again.' });
       }
 
-      // Create a mock invoice object since we're working with temporary data
+      // Get real invoice data from database
+      const invoiceRecord = await storage.getInvoiceById(invoiceId);
+      if (!invoiceRecord) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+
       const invoice = {
-        invoiceNumber: 'TEMP-' + Date.now(),
-        invoiceDate: new Date().toISOString(),
-        totalAmount: 0,
-        supplierName: 'Временный поставщик',
-        buyerName: 'Временный покупатель'
+        invoiceNumber: invoiceRecord.invoiceNumber,
+        invoiceDate: invoiceRecord.invoiceDate.toISOString(),
+        totalAmount: invoiceRecord.totalAmount,
+        supplierName: invoiceRecord.supplier.name,
+        buyerName: invoiceRecord.buyer.name
       };
 
       // Convert base64 PDF data to buffer
@@ -444,7 +448,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error('Failed to send invoice via Telegram:', error);
-      res.status(500).json({ message: 'Failed to send invoice: ' + error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ message: 'Failed to send invoice: ' + errorMessage });
     }
   });
 

@@ -12,11 +12,12 @@ import { apiRequest } from "@/lib/queryClient";
 
 import { 
   FileText, MessageCircle, LogOut, Edit3, Building, PenTool, Eye, 
-  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List
+  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List, Download
 } from "lucide-react";
 import { numberToWords } from "@/lib/number-to-words";
-import { validateBinIin } from "@/lib/validation";
+import { validateBinIin, validateIik, validateBik, validateRequiredField, validateAmount } from "@/lib/validation";
 import { PDFGenerator, type InvoicePDFData } from "@/lib/pdf-generator";
+import { ExcelGenerator, type ExcelInvoiceData } from "@/lib/excel-generator";
 
 type Mode = 'edit' | 'supplier' | 'signature' | 'preview';
 
@@ -270,8 +271,73 @@ export default function InvoiceGenerator() {
     window.print();
   };
 
+  const validateInvoiceData = (): string[] => {
+    const errors: string[] = [];
+    
+    // Проверка обязательных полей
+    if (!validateRequiredField(invoiceData.invoiceNumber)) {
+      errors.push('Номер счета обязателен');
+    }
+    if (!validateRequiredField(invoiceData.invoiceDate)) {
+      errors.push('Дата счета обязательна');
+    }
+    if (!validateRequiredField(invoiceData.buyer.name)) {
+      errors.push('Наименование покупателя обязательно');
+    }
+    if (!validateRequiredField(invoiceData.buyer.bin)) {
+      errors.push('БИН/ИИН покупателя обязателен');
+    }
+    if (!validateRequiredField(invoiceData.buyer.address)) {
+      errors.push('Адрес покупателя обязателен');
+    }
+    
+    // Проверка формата данных
+    if (invoiceData.buyer.bin && !validateBinIin(invoiceData.buyer.bin)) {
+      errors.push('БИН/ИИН покупателя должен содержать 12 цифр');
+    }
+    if (invoiceData.supplier.bin && !validateBinIin(invoiceData.supplier.bin)) {
+      errors.push('БИН/ИИН поставщика должен содержать 12 цифр');
+    }
+    if (invoiceData.supplier.iik && !validateIik(invoiceData.supplier.iik)) {
+      errors.push('ИИК должен начинаться с KZ и содержать 20 символов');
+    }
+    if (invoiceData.supplier.bik && !validateBik(invoiceData.supplier.bik)) {
+      errors.push('БИК должен содержать 8 символов');
+    }
+    
+    // Проверка услуг
+    if (invoiceData.services.length === 0) {
+      errors.push('Добавьте хотя бы одну услугу');
+    }
+    
+    invoiceData.services.forEach((service, index) => {
+      if (!validateRequiredField(service.name)) {
+        errors.push(`Наименование услуги ${index + 1} обязательно`);
+      }
+      if (!validateAmount(service.quantity)) {
+        errors.push(`Количество услуги ${index + 1} должно быть больше 0`);
+      }
+      if (!validateAmount(service.price)) {
+        errors.push(`Цена услуги ${index + 1} должна быть больше 0`);
+      }
+    });
+    
+    return errors;
+  };
+
   const downloadPDF = async () => {
     try {
+      // Валидация данных перед генерацией PDF
+      const validationErrors = validateInvoiceData();
+      if (validationErrors.length > 0) {
+        toast({
+          title: "Ошибки валидации",
+          description: validationErrors.join(', '),
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Prepare PDF data using the improved PDF generator
       const pdfData: InvoicePDFData = {
         invoiceNumber: invoiceData.invoiceNumber,
@@ -313,6 +379,17 @@ export default function InvoiceGenerator() {
 
   const sendToTelegram = async () => {
     try {
+      // Валидация данных перед отправкой
+      const validationErrors = validateInvoiceData();
+      if (validationErrors.length > 0) {
+        toast({
+          title: "Ошибки валидации",
+          description: validationErrors.join(', '),
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // First save the invoice to the database
       const savedInvoice = await saveInvoiceToDatabase();
       console.log('Saved invoice:', savedInvoice);
@@ -398,6 +475,58 @@ export default function InvoiceGenerator() {
       toast({
         title: "Ошибка генерации",
         description: "Не удалось создать PDF файл",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const downloadExcel = async () => {
+    try {
+      // Валидация данных перед генерацией Excel
+      const validationErrors = validateInvoiceData();
+      if (validationErrors.length > 0) {
+        toast({
+          title: "Ошибки валидации",
+          description: validationErrors.join(', '),
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Подготавливаем данные для Excel
+      const excelData: ExcelInvoiceData = {
+        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceDate: invoiceData.invoiceDate,
+        contract: invoiceData.contract,
+        supplier: invoiceData.supplier,
+        buyer: invoiceData.buyer,
+        services: invoiceData.services.map(service => ({
+          name: service.name,
+          quantity: service.quantity,
+          unit: service.unit,
+          price: service.price,
+          total: service.total
+        })),
+        totalAmount: getTotalAmount(),
+        totalAmountWords: numberToWords(getTotalAmount())
+      };
+
+      // Генерируем Excel файл
+      const excelBuffer = ExcelGenerator.generateInvoiceExcel(excelData);
+      
+      // Скачиваем файл
+      const filename = `Счет_${invoiceData.invoiceNumber}_${invoiceData.invoiceDate}.xlsx`;
+      ExcelGenerator.downloadExcel(excelBuffer, filename);
+      
+      toast({
+        title: "Excel скачан",
+        description: "Файл сохранен на ваше устройство",
+      });
+    } catch (error) {
+      console.error('Failed to download Excel:', error);
+      toast({
+        title: "Ошибка скачивания",
+        description: "Не удалось создать Excel файл",
         variant: "destructive"
       });
     }
@@ -506,6 +635,7 @@ export default function InvoiceGenerator() {
               {invoiceData.buyer.bin && !validateBinIin(invoiceData.buyer.bin) && (
                 <p className="text-sm text-red-500 mt-1">БИН/ИИН должен содержать 12 цифр</p>
               )}
+
             </div>
             <div className="md:col-span-2">
               <Label htmlFor="buyerAddress">Адрес *</Label>
@@ -645,7 +775,12 @@ export default function InvoiceGenerator() {
               id="supplierBin"
               value={invoiceData.supplier.bin}
               onChange={(e) => updateField('supplier', 'bin', e.target.value)}
+              placeholder="12 цифр"
             />
+            {invoiceData.supplier.bin && !validateBinIin(invoiceData.supplier.bin) && (
+              <p className="text-sm text-red-500 mt-1">БИН/ИИН должен содержать 12 цифр</p>
+            )}
+
           </div>
           <div>
             <Label htmlFor="supplierKbe">КБЕ</Label>
@@ -687,7 +822,11 @@ export default function InvoiceGenerator() {
                 id="supplierBik"
                 value={invoiceData.supplier.bik}
                 onChange={(e) => updateField('supplier', 'bik', e.target.value)}
+                placeholder="8 символов"
               />
+              {invoiceData.supplier.bik && !validateBik(invoiceData.supplier.bik) && (
+                <p className="text-sm text-red-500 mt-1">БИК должен содержать 8 символов</p>
+              )}
             </div>
             <div>
               <Label htmlFor="supplierPaymentCode">Код назначения платежа</Label>
@@ -703,7 +842,11 @@ export default function InvoiceGenerator() {
                 id="supplierIik"
                 value={invoiceData.supplier.iik}
                 onChange={(e) => updateField('supplier', 'iik', e.target.value)}
+                placeholder="KZ + 18 цифр"
               />
+              {invoiceData.supplier.iik && !validateIik(invoiceData.supplier.iik) && (
+                <p className="text-sm text-red-500 mt-1">ИИК должен начинаться с KZ и содержать 20 символов</p>
+              )}
             </div>
           </div>
         </div>
@@ -921,6 +1064,10 @@ export default function InvoiceGenerator() {
             <Button onClick={downloadPDF} variant="outline">
               <FileText className="w-4 h-4 mr-2" />
               Скачать PDF
+            </Button>
+            <Button onClick={downloadExcel} variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Скачать Excel
             </Button>
             <Button onClick={printInvoice} variant="outline">
               <Printer className="w-4 h-4 mr-2" />

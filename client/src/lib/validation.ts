@@ -14,6 +14,21 @@ export function validateBik(value: string): boolean {
   return value.length === 8;
 }
 
+export function validateAmount(value: number): boolean {
+  // Сумма должна быть положительной
+  return value > 0;
+}
+
+export function validateRequiredField(value: string): boolean {
+  // Поле не должно быть пустым
+  return value.trim().length > 0;
+}
+
+export function validateInvoiceNumber(value: string): boolean {
+  // Номер счета не должен быть пустым
+  return value.trim().length > 0;
+}
+
 export function formatCurrency(amount: number): string {
   return amount.toLocaleString('ru-RU', {
     minimumFractionDigits: 2,
