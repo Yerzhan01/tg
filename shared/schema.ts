@@ -6,10 +6,10 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   telegramId: text("telegram_id").notNull().unique(),
-  username: text("username").default(null),
+  username: text("username"),
   firstName: text("first_name").notNull(),
-  lastName: text("last_name").default(null),
-  photoUrl: text("photo_url").default(null),
+  lastName: text("last_name"),
+  photoUrl: text("photo_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -22,8 +22,8 @@ export const suppliers = pgTable("suppliers", {
   bank: text("bank").notNull(),
   bik: text("bik").notNull(),
   iik: text("iik").notNull(),
-  kbe: text("kbe").default(null),
-  paymentCode: text("payment_code").default(null),
+  kbe: text("kbe"),
+  paymentCode: text("payment_code"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -47,8 +47,8 @@ export const invoices = pgTable("invoices", {
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
   totalAmountWords: text("total_amount_words").notNull(),
   status: text("status").default("draft"), // draft, sent, paid
-  pdfUrl: text("pdf_url").default(null),
-  excelUrl: text("excel_url").default(null),
+  pdfUrl: text("pdf_url"),
+  excelUrl: text("excel_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -67,11 +67,11 @@ export const invoiceItems = pgTable("invoice_items", {
 export const signatureSettings = pgTable("signature_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
-  signatureUrl: text("signature_url").default(null),
+  signatureUrl: text("signature_url"),
   signatureWidth: integer("signature_width").default(200),
   signatureHeight: integer("signature_height").default(70),
   signaturePosition: text("signature_position").default("right"), // left, center, right
-  stampUrl: text("stamp_url").default(null),
+  stampUrl: text("stamp_url"),
   stampSize: integer("stamp_size").default(100),
   stampPosition: text("stamp_position").default("left"), // left, center, right
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -125,14 +125,6 @@ export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 
 export type SignatureSettings = typeof signatureSettings.$inferSelect;
-export type InsertSignatureSettings = z.infer<typeof insertSignatureSettingsSchema>;
-
-// Complex types for detailed invoice with relations
-export type InvoiceWithDetails = Invoice & {
-  supplier: Supplier;
-  buyer: Buyer;
-  items: InvoiceItem[];
-};
 export type InsertSignatureSettings = z.infer<typeof insertSignatureSettingsSchema>;
 
 // Complete invoice with relations

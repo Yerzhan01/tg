@@ -1,36 +1,8 @@
 import jsPDF from 'jspdf';
-
-// Base64-encoded PT Sans font (сокращенная версия для демонстрации)
-// В производственной версии используйте полный base64 шрифта
-const PT_SANS_NORMAL = "AAEAAAAMAIAAAwBAT1MvMg7v..."; // Здесь должен быть полный base64
+import { registerPTSansFont } from './fonts';
+// PT Sans fonts are now imported from separate files with full base64 data
 
 // Функция для транслитерации кириллицы в случае проблем со шрифтом
-function transliterateText(text: string): string {
-  const translitMap: { [key: string]: string } = {
-    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
-    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-    'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
-    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'YO',
-    'Ж': 'ZH', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
-    'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
-    'Ф': 'F', 'Х': 'KH', 'Ц': 'TS', 'Ч': 'CH', 'Ш': 'SH', 'Щ': 'SCH',
-    'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'YU', 'Я': 'YA',
-    // Казахские буквы
-    'ә': 'ae', 'ғ': 'gh', 'қ': 'q', 'ң': 'ng', 'ө': 'oe', 'ұ': 'u', 'ү': 'ue', 'һ': 'h', 'і': 'i',
-    'Ә': 'AE', 'Ғ': 'GH', 'Қ': 'Q', 'Ң': 'NG', 'Ө': 'OE', 'Ұ': 'U', 'Ү': 'UE', 'Һ': 'H', 'І': 'I'
-  };
-  
-  return text.split('').map(char => {
-    // Если это мягкий или твердый знак, возвращаем пустую строку
-    if (char === 'ь' || char === 'ъ' || char === 'Ь' || char === 'Ъ') {
-      return '';
-    }
-    // Иначе используем карту транслитерации или оставляем символ как есть
-    return translitMap[char] || char;
-  }).join('');
-}
 
 export interface InvoicePDFData {
   invoiceNumber: string;
@@ -165,25 +137,24 @@ export class PDFGenerator {
       compress: true
     });
     
+    // Register PT Sans fonts for proper Cyrillic support
+    const fontsRegistered = registerPTSansFont(pdf);
+    
     const L = this.LAYOUT;
     
-    // Попытка загрузить кастомный шрифт
-    const customFontLoaded = this.loadCustomFont(pdf);
-    
-    // Устанавливаем базовый шрифт
-    if (customFontLoaded) {
+    // Set font for Cyrillic support
+    if (fontsRegistered) {
       pdf.setFont('PTSans', 'normal');
+      console.log('Using PT Sans font for Cyrillic support');
     } else {
-      pdf.setFont('helvetica', 'normal');
+      // Fallback to Arial which has better Cyrillic support than Helvetica
+      pdf.setFont('Arial', 'normal');
+      console.log('Using Arial font as fallback for Cyrillic support');
     }
 
-    // Функция для подготовки текста (кириллица или транслитерация)
+    // Function to prepare text (preserve Cyrillic with PT Sans or Arial)
     const prepareText = (text: string): string => {
-      if (customFontLoaded) {
-        return text; // Оставляем кириллицу как есть
-      } else {
-        return transliterateText(text); // Транслитерируем
-      }
+      return text; // Keep original text including Cyrillic and Kazakh characters
     };
 
     // 1. ПРЕДУПРЕЖДАЮЩИЙ ТЕКСТ
@@ -232,7 +203,11 @@ export class PDFGenerator {
     
     // Заголовок таблицы
     pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
+    try {
+      pdf.setFont('PTSans', 'bold');
+    } catch {
+      pdf.setFont('Arial', 'bold');
+    }
     pdf.text(prepareText('Образец платежного поручения'), L.pageWidth / 2, PT.titleY, { align: 'center' });
     
     // Основная рамка таблицы
@@ -254,13 +229,21 @@ export class PDFGenerator {
     pdf.setFontSize(9);
     
     // Первая строка - заголовки
-    pdf.setFont('helvetica', 'bold');
+    try {
+      pdf.setFont('PTSans', 'bold');
+    } catch {
+      pdf.setFont('Arial', 'bold');
+    }
     pdf.text(prepareText('Бенефициар:'), L.leftMargin + 2, PT.startY + 5);
     pdf.text(prepareText('ИИК'), (PT.cols.iikX + PT.cols.kbeX) / 2, PT.startY + 5, { align: 'center' });
     pdf.text(prepareText('Кбе'), (PT.cols.kbeX + L.leftMargin + tableWidth) / 2, PT.startY + 5, { align: 'center' });
     
     // Вторая строка - данные
-    pdf.setFont('helvetica', 'normal');
+    try {
+      pdf.setFont('PTSans', 'normal');
+    } catch {
+      pdf.setFont('Arial', 'normal');
+    }
     pdf.text(prepareText(data.supplier.name), L.leftMargin + 2, PT.startY + 13);
     pdf.text(data.supplier.iik, PT.cols.iikX + 2, PT.startY + 13);
     pdf.text(data.supplier.kbe || '19', PT.cols.kbeX + 2, PT.startY + 13);
@@ -269,13 +252,21 @@ export class PDFGenerator {
     pdf.text(prepareText(`БИН: ${data.supplier.bin}`), L.leftMargin + 2, PT.startY + 21);
     
     // Четвертая строка - заголовки банка
-    pdf.setFont('helvetica', 'bold');
+    try {
+      pdf.setFont('PTSans', 'bold');
+    } catch {
+      pdf.setFont('Arial', 'bold');
+    }
     pdf.text(prepareText('Банк бенефициара:'), L.leftMargin + 2, PT.startY + 29);
     pdf.text(prepareText('БИК'), (PT.cols.bikX + PT.cols.codeX) / 2, PT.startY + 29, { align: 'center' });
     pdf.text(prepareText('Код назначения платежа'), PT.cols.codeX + 2, PT.startY + 29);
     
     // Пятая строка - данные банка
-    pdf.setFont('helvetica', 'normal');
+    try {
+      pdf.setFont('PTSans', 'normal');
+    } catch {
+      pdf.setFont('Arial', 'normal');
+    }
     pdf.text(prepareText(data.supplier.bank), L.leftMargin + 2, PT.startY + 37);
     pdf.text(data.supplier.bik, PT.cols.bikX + 2, PT.startY + 37);
     pdf.text(data.supplier.paymentCode || '859', PT.cols.codeX + 2, PT.startY + 37);
@@ -285,7 +276,7 @@ export class PDFGenerator {
     const L = this.LAYOUT;
     
     pdf.setFontSize(L.invoiceTitle.fontSize);
-    pdf.setFont('helvetica', 'bold');
+    try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); };
     
     // Правильное форматирование даты
     const date = new Date(data.invoiceDate);
@@ -310,7 +301,7 @@ export class PDFGenerator {
     const L = this.LAYOUT;
     
     pdf.setFontSize(L.parties.fontSize);
-    pdf.setFont('helvetica', 'normal');
+    try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); };
     
     // Поставщик
     const supplierText = prepareText(`БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`);
@@ -351,7 +342,7 @@ export class PDFGenerator {
     }
     
     // Заголовки таблицы
-    pdf.setFont('helvetica', 'bold');
+    try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); };
     pdf.setFontSize(8);
     
     const headers = ['No', 'Kod', 'Naimenovanie', 'Kol-vo', 'Ed.', 'Tsena', 'Summa'];
@@ -364,7 +355,7 @@ export class PDFGenerator {
     });
     
     // Данные таблицы
-    pdf.setFont('helvetica', 'normal');
+    try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); };
     let currentY = ST.startY + ST.rowHeight;
     
     data.services.forEach((service, index) => {
@@ -400,7 +391,7 @@ export class PDFGenerator {
     });
     
     // Строка итого
-    pdf.setFont('helvetica', 'bold');
+    try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); };
     const totalX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
     pdf.text('Itogo:', totalX + 12.5, currentY + 5, { align: 'center' });
     pdf.text(this.formatMoney(data.totalAmount), 
@@ -412,7 +403,7 @@ export class PDFGenerator {
   private static drawTotalInfo(pdf: jsPDF, data: InvoicePDFData, startY: number, prepareText: (text: string) => string): number {
     const L = this.LAYOUT;
     
-    pdf.setFont('helvetica', 'normal');
+    try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); };
     pdf.setFontSize(9);
     
     const y1 = startY + 10;
@@ -433,7 +424,7 @@ export class PDFGenerator {
     pdf.line(L.leftMargin, startY, L.leftMargin + tableWidth, startY);
     
     // Текст
-    pdf.setFont('helvetica', 'normal');
+    try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); };
     pdf.setFontSize(9);
     pdf.text('Ispolnitel:', L.leftMargin, startY + 12);
     pdf.text('/bukhgalter/', L.signature.signatureX + 30, startY + 12);
