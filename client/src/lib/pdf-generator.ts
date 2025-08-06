@@ -58,35 +58,60 @@ export class PDFGenerator {
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
     
-    // Payment details section - no table, just text alignment like in the new sample
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Бенефициар:', margin, 52);
-    pdf.text('ИИК:', margin + 100, 52);
-    pdf.text('КБе:', margin + 160, 52);
+    // Payment details table exactly like in sample
+    const tableY = 45;
+    const tableHeight = 40;
+    const tableWidth = contentWidth;
     
+    // Main table border
+    pdf.rect(margin, tableY, tableWidth, tableHeight);
+    
+    // Vertical lines for columns
+    pdf.line(margin + 120, tableY, margin + 120, tableY + 25); // ИИК column separator
+    pdf.line(margin + 165, tableY, margin + 165, tableY + 25); // КБе column separator
+    pdf.line(margin + 120, tableY + 25, margin + 120, tableY + tableHeight); // БИК column separator
+    pdf.line(margin + 165, tableY + 25, margin + 165, tableY + tableHeight); // Code column separator
+    
+    // Horizontal lines
+    pdf.line(margin, tableY + 8, margin + tableWidth, tableY + 8); // After headers
+    pdf.line(margin, tableY + 18, margin + tableWidth, tableY + 18); // After supplier name
+    pdf.line(margin, tableY + 25, margin + tableWidth, tableY + 25); // Before bank info
+    pdf.line(margin, tableY + 33, margin + tableWidth, tableY + 33); // After bank headers
+    
+    // Headers row
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    pdf.text('Бенефициар:', margin + 1, tableY + 6);
+    pdf.text('ИИК', margin + 140, tableY + 6, { align: 'center' });
+    pdf.text('КБе', margin + 180, tableY + 6, { align: 'center' });
+    
+    // Supplier name and data
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.supplier.name, margin, 57);
-    pdf.text(data.supplier.iik, margin + 100, 57);
-    pdf.text(data.supplier.kbe, margin + 160, 57);
-    pdf.text(`БИН: ${data.supplier.bin}`, margin, 62);
+    pdf.text(data.supplier.name, margin + 1, tableY + 14);
+    pdf.text(data.supplier.iik, margin + 122, tableY + 14);
+    pdf.text(data.supplier.kbe, margin + 167, tableY + 14);
+    pdf.text(`БИН: ${data.supplier.bin}`, margin + 1, tableY + 22);
     
+    // Bank info headers
     pdf.setFont('helvetica', 'bold');
-    pdf.text('БИК:', margin + 100, 67);
-    pdf.text('Код назначения платежа:', margin + 160, 67);
+    pdf.text('Банк бенефициара:', margin + 1, tableY + 29);
+    pdf.text('БИК', margin + 140, tableY + 29, { align: 'center' });
+    pdf.text('Код назначения платежа', margin + 167, tableY + 29);
+    
+    // Bank info data
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.supplier.bik, margin + 100, 72);
-    pdf.text(data.supplier.paymentCode, margin + 160, 72);
+    pdf.text(data.supplier.bank, margin + 1, tableY + 37);
+    pdf.text(data.supplier.bik, margin + 122, tableY + 37);
+    pdf.text(data.supplier.paymentCode, margin + 167, tableY + 37);
     
+    // Invoice title with line separator like in sample
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`Банк бенефициара: ${data.supplier.bank}`, margin, 77);
+    const titleY = 95;
+    pdf.text(`Счет на оплату № ${data.invoiceNumber} от ${new Date(data.invoiceDate).toLocaleDateString('ru-RU')}`, margin, titleY);
     
-    // Invoice title
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`Счет на оплату № ${data.invoiceNumber} от ${new Date(data.invoiceDate).toLocaleDateString('ru-RU')}`, pageWidth/2, 95, { align: 'center' });
-    
-    // Add line separator
-    pdf.line(margin, 105, margin + contentWidth, 105);
+    // Line under title
+    pdf.line(margin, titleY + 5, margin + contentWidth, titleY + 5);
     
     // Parties information
     pdf.setFontSize(9);
