@@ -58,41 +58,27 @@ export class PDFGenerator {
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
     
-    // Create a bordered table for payment details like in the sample
-    const tableWidth = contentWidth;
-    const tableHeight = 35;
-    pdf.rect(margin, 45, tableWidth, tableHeight);
-    
-    // Draw internal lines
-    pdf.line(margin + 130, 45, margin + 130, 45 + tableHeight); // ИИК column
-    pdf.line(margin + 170, 45, margin + 170, 45 + tableHeight); // КБЕ column
-    pdf.line(margin, 58, margin + tableWidth, 58); // Horizontal line after headers
-    pdf.line(margin, 68, margin + tableWidth, 68); // Horizontal line after second row
-    pdf.line(margin + 130, 68, margin + 130, 80); // БИК column divider
-    pdf.line(margin + 170, 68, margin + 170, 80); // Payment code column divider
-    
-    // Headers - bold
+    // Payment details section - no table, just text alignment like in the new sample
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Бенефициар:', margin + 2, 52);
-    pdf.text('ИИК', margin + 132, 52);
-    pdf.text('КБе', margin + 172, 52);
+    pdf.text('Бенефициар:', margin, 52);
+    pdf.text('ИИК:', margin + 100, 52);
+    pdf.text('КБе:', margin + 160, 52);
     
-    // Data rows - normal font
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.supplier.name, margin + 2, 57);
-    pdf.text(data.supplier.iik, margin + 132, 57);
-    pdf.text(data.supplier.kbe, margin + 172, 57);
-    pdf.text(`БИН: ${data.supplier.bin}`, margin + 2, 62);
+    pdf.text(data.supplier.name, margin, 57);
+    pdf.text(data.supplier.iik, margin + 100, 57);
+    pdf.text(data.supplier.kbe, margin + 160, 57);
+    pdf.text(`БИН: ${data.supplier.bin}`, margin, 62);
     
-    // Third row
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Банк бенефициара:', margin + 2, 73);
-    pdf.text('БИК', margin + 132, 73);
-    pdf.text('Код назначения платежа', margin + 172, 73);
+    pdf.text('БИК:', margin + 100, 67);
+    pdf.text('Код назначения платежа:', margin + 160, 67);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.supplier.bank, margin + 2, 78);
-    pdf.text(data.supplier.bik, margin + 132, 78);
-    pdf.text(data.supplier.paymentCode, margin + 172, 78);
+    pdf.text(data.supplier.bik, margin + 100, 72);
+    pdf.text(data.supplier.paymentCode, margin + 160, 72);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Банк бенефициара: ${data.supplier.bank}`, margin, 77);
     
     // Invoice title
     pdf.setFontSize(14);
