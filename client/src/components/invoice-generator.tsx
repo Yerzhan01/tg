@@ -927,13 +927,140 @@ export default function InvoiceGenerator() {
         </div>
       </CardHeader>
       <CardContent>
-        <InvoicePreview
-          invoiceData={invoiceData}
-          signature={signature}
-          stamp={stamp}
-          signatureSettings={signatureSettings}
-          stampSettings={stampSettings}
-        />
+        <div id="invoiceDocument" className="bg-white p-8 print:p-0 print:shadow-none shadow-lg rounded-lg">
+          {/* Invoice Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold mb-2">СЧЕТ НА ОПЛАТУ</h1>
+            <p className="text-lg">№ {invoiceData.invoiceNumber} от {invoiceData.invoiceDate}</p>
+            {invoiceData.contract && <p className="text-sm text-gray-600">По договору: {invoiceData.contract}</p>}
+          </div>
+
+          {/* Supplier Information */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-3">Поставщик:</h3>
+            <div className="bg-gray-50 p-4 rounded">
+              <p className="font-medium">{invoiceData.supplier.name}</p>
+              <p>БИН: {invoiceData.supplier.bin}</p>
+              <p>Адрес: {invoiceData.supplier.address}</p>
+              <div className="mt-2">
+                <p>Банк: {invoiceData.supplier.bank}</p>
+                <p>БИК: {invoiceData.supplier.bik}</p>
+                <p>ИИК: {invoiceData.supplier.iik}</p>
+                <p>КБЕ: {invoiceData.supplier.kbe}</p>
+                <p>Код назначения платежа: {invoiceData.supplier.paymentCode}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Buyer Information */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-3">Покупатель:</h3>
+            <div className="bg-gray-50 p-4 rounded">
+              <p className="font-medium">{invoiceData.buyer.name}</p>
+              <p>БИН: {invoiceData.buyer.bin}</p>
+              <p>Адрес: {invoiceData.buyer.address}</p>
+            </div>
+          </div>
+
+          {/* Services Table */}
+          <div className="mb-8">
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 p-2 text-left">№</th>
+                  <th className="border border-gray-300 p-2 text-left">Наименование</th>
+                  <th className="border border-gray-300 p-2 text-center">Кол-во</th>
+                  <th className="border border-gray-300 p-2 text-center">Ед. изм.</th>
+                  <th className="border border-gray-300 p-2 text-right">Цена</th>
+                  <th className="border border-gray-300 p-2 text-right">Сумма</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoiceData.services.map((service, index) => (
+                  <tr key={service.id}>
+                    <td className="border border-gray-300 p-2">{index + 1}</td>
+                    <td className="border border-gray-300 p-2">{service.name}</td>
+                    <td className="border border-gray-300 p-2 text-center">{service.quantity}</td>
+                    <td className="border border-gray-300 p-2 text-center">{service.unit}</td>
+                    <td className="border border-gray-300 p-2 text-right">{service.price.toLocaleString('ru-RU')} ₸</td>
+                    <td className="border border-gray-300 p-2 text-right">{service.total.toLocaleString('ru-RU')} ₸</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gray-100 font-semibold">
+                  <td colSpan={5} className="border border-gray-300 p-2 text-right">Итого:</td>
+                  <td className="border border-gray-300 p-2 text-right">{getTotalAmount().toLocaleString('ru-RU')} ₸</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Amount in Words */}
+          <div className="mb-8">
+            <p className="font-semibold">
+              Всего к оплате: {numberToWords(getTotalAmount())}
+            </p>
+          </div>
+
+          {/* Signatures */}
+          <div className="mt-12 flex justify-between items-end">
+            <div className="text-left">
+              <p className="mb-8">Руководитель: ________________</p>
+              <p className="text-sm text-gray-600">подпись</p>
+            </div>
+            
+            <div className="text-right">
+              <p className="mb-8">Главный бухгалтер: ________________</p>
+              <p className="text-sm text-gray-600">подпись</p>
+            </div>
+          </div>
+
+          {/* Signature and Stamp Images */}
+          {(signature || stamp) && (
+            <div className="mt-8 flex justify-between">
+              {signature && (
+                <div 
+                  className="signature-container"
+                  style={{
+                    position: 'absolute',
+                    left: `${signatureSettings.x}px`,
+                    top: `${signatureSettings.y}px`,
+                    transform: `scale(${signatureSettings.scale})`,
+                    zIndex: 10
+                  }}
+                >
+                  <img 
+                    src={signature} 
+                    alt="Подпись" 
+                    className="max-w-none"
+                    style={{ width: '150px', height: 'auto' }}
+                  />
+                </div>
+              )}
+              
+              {stamp && (
+                <div 
+                  className="stamp-container"
+                  style={{
+                    position: 'absolute',
+                    left: `${stampSettings.x}px`,
+                    top: `${stampSettings.y}px`,
+                    transform: `scale(${stampSettings.scale})`,
+                    zIndex: 10
+                  }}
+                >
+                  <img 
+                    src={stamp} 
+                    alt="Печать" 
+                    className="max-w-none"
+                    style={{ width: '120px', height: 'auto' }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
