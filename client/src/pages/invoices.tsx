@@ -1,41 +1,86 @@
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, Send } from "lucide-react";
+import { FileText, Download, Send, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Invoice {
   id: string;
-  number: string;
-  date: string;
-  supplierName: string;
-  buyerName: string;
+  invoiceNumber: string;
+  invoiceDate: string;
   totalAmount: number;
   status: 'draft' | 'sent' | 'paid';
+  supplier?: {
+    name: string;
+    bin: string;
+  };
+  buyer?: {
+    name: string;
+    bin: string;
+  };
 }
 
 export default function InvoicesPage() {
-  // Пример данных - в реальном приложении будет загрузка с сервера
-  const [invoices] = useState<Invoice[]>([
-    {
-      id: '1',
-      number: 'TEMP-1754500728934',
-      date: '2025-08-06',
-      supplierName: 'Индивидуальный предприниматель Sonar Group',
-      buyerName: 'ТОО "White Label"',
-      totalAmount: 300000,
-      status: 'sent'
-    },
-    {
-      id: '2',
-      number: 'TEMP-1754501152362',
-      date: '2025-08-06',
-      supplierName: 'Временный поставщик',
-      buyerName: 'Временный покупатель',
-      totalAmount: 0,
-      status: 'draft'
+  const { toast } = useToast();
+  
+  const { data: invoices = [], isLoading, error } = useQuery({
+    queryKey: ['/api/invoices'],
+    queryFn: async () => {
+      const response = await fetch('/api/invoices');
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoices');
+      }
+      return response.json();
     }
-  ]);
+  });
+
+  const handleDownloadPDF = async (invoice: Invoice) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/pdf`);
+      if (!response.ok) throw new Error('Failed to download PDF');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `Счет_${invoice.invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось скачать PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendToTelegram = async (invoice: Invoice) => {
+    try {
+      const response = await fetch('/api/telegram/send-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceId: invoice.id })
+      });
+      
+      if (!response.ok) throw new Error('Failed to send to Telegram');
+      
+      toast({
+        title: "Успешно",
+        description: "Счет отправлен в Telegram",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось отправить в Telegram",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {
@@ -102,7 +147,29 @@ export default function InvoicesPage() {
         </Card>
 
         <div className="grid gap-4">
-          {invoices.length === 0 ? (
+          {isLoading ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Loader2 className="mx-auto h-8 w-8 text-gray-400 animate-spin mb-4" />
+                <p className="text-gray-500">Загрузка счетов...</p>
+              </CardContent>
+            </Card>
+          ) : error ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="mx-auto h-12 w-12 text-red-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Ошибка загрузки
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Не удалось загрузить список счетов
+                </p>
+                <Button onClick={() => window.location.reload()}>
+                  Обновить страницу
+                </Button>
+              </CardContent>
+            </Card>
+          ) : invoices.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -123,10 +190,10 @@ export default function InvoicesPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">
-                      Счет № {invoice.number}
+                      Счет № {invoice.invoiceNumber}
                     </CardTitle>
-                    <Badge className={getStatusColor(invoice.status)}>
-                      {getStatusText(invoice.status)}
+                    <Badge className={getStatusColor(invoice.status || 'draft')}>
+                      {getStatusText(invoice.status || 'draft')}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -135,19 +202,19 @@ export default function InvoicesPage() {
                     <div>
                       <p className="text-sm text-gray-500">Дата</p>
                       <p className="font-medium">
-                        {new Date(invoice.date).toLocaleDateString('ru-RU')}
+                        {new Date(invoice.invoiceDate).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Поставщик</p>
-                      <p className="font-medium truncate" title={invoice.supplierName}>
-                        {invoice.supplierName}
+                      <p className="font-medium truncate" title={invoice.supplier?.name}>
+                        {invoice.supplier?.name || 'Не указан'}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Покупатель</p>
-                      <p className="font-medium truncate" title={invoice.buyerName}>
-                        {invoice.buyerName}
+                      <p className="font-medium truncate" title={invoice.buyer?.name}>
+                        {invoice.buyer?.name || 'Не указан'}
                       </p>
                     </div>
                   </div>
@@ -160,11 +227,19 @@ export default function InvoicesPage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDownloadPDF(invoice)}
+                      >
                         <Download className="h-4 w-4 mr-1" />
                         PDF
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleSendToTelegram(invoice)}
+                      >
                         <Send className="h-4 w-4 mr-1" />
                         В Telegram
                       </Button>
