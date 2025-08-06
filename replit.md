@@ -21,15 +21,17 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript running on Node.js
 - **API Design**: RESTful API with JSON request/response format
-- **File Upload**: Multer middleware for handling signature and stamp image uploads
+- **File Upload**: Secure file upload with type validation (JPEG, PNG, GIF) and 5MB size limit
 - **Session Management**: Express sessions with PostgreSQL session store
+- **Security**: File type validation, size limits, and secure object storage integration
 - **Error Handling**: Centralized error handling middleware with status code management
 
 ### Data Storage Solutions
 - **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
 - **Schema Management**: Drizzle Kit for database migrations and schema synchronization
 - **Connection**: Neon Database serverless PostgreSQL for cloud hosting
-- **Storage Structure**: Relational design with separate tables for users, suppliers, buyers, invoices, and invoice items
+- **Object Storage**: Replit Object Storage for secure file management with proper ACL policies
+- **Storage Structure**: Relational design with separate tables for users, suppliers, buyers, invoices, invoice items, and signature settings
 
 ### Authentication and Authorization
 - **Primary Method**: Telegram Web App authentication using Telegram Bot API
@@ -46,12 +48,15 @@ Preferred communication style: Simple, everyday language.
 - **Number Conversion**: Custom implementation for converting amounts to Kazakh text format
 
 ### Key Features
-- **Invoice Management**: Create, edit, and manage invoice data with automatic calculations
-- **Document Export**: Generate PDF and Excel formats with customizable layouts
+- **Invoice Management**: Create, edit, copy, and manage invoice data with automatic calculations
+- **Search and Filtering**: Real-time search by invoice number, buyer, supplier with status filters
+- **Document Export**: Generate PDF and Excel formats with customizable layouts and validation
+- **Service Templates**: Predefined templates for different business types (IT, design, marketing, etc.)
 - **Telegram Integration**: Bot notifications and authentication through Telegram
 - **Multi-language Support**: Kazakh and Russian language support for amount conversion
-- **Signature Management**: Upload and position digital signatures and company stamps
-- **Data Persistence**: Save supplier and buyer information for reuse
+- **Secure File Management**: Object storage integration with file type and size validation
+- **Data Persistence**: Save supplier and buyer information for reuse with copy functionality
+- **Comprehensive Validation**: Real-time validation of BIN/IIN, IIK, BIK, and required fields
 - **Compliance**: Meets Kazakhstan legislation requirements for official invoices
 
 ### Development Tools

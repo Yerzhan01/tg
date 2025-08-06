@@ -45,7 +45,7 @@ export class ExcelGenerator {
       // Поставщик
       ['ПОСТАВЩИК:'],
       [`Наименование: ${data.supplier.name}`],
-      [`БИН: ${data.supplier.bin}`],
+      [`БИН: ${data.supplier.bin || ''}`],
       [`Адрес: ${data.supplier.address}`],
       [`Банк: ${data.supplier.bank}`],
       [`БИК: ${data.supplier.bik}`],
@@ -70,17 +70,17 @@ export class ExcelGenerator {
       worksheetData.push([
         index + 1,
         service.name,
-        service.quantity,
+        service.quantity.toString(),
         service.unit,
-        service.price,
-        service.total
+        service.price.toString(),
+        service.total.toString()
       ]);
     });
     
     // Добавляем итоги
     worksheetData.push(
       [''],
-      ['', '', '', '', 'ИТОГО:', data.totalAmount],
+      ['', '', '', '', 'ИТОГО:', data.totalAmount.toString()],
       [''],
       [`Сумма прописью: ${data.totalAmountWords}`]
     );

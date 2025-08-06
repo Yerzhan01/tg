@@ -12,12 +12,13 @@ import { apiRequest } from "@/lib/queryClient";
 
 import { 
   FileText, MessageCircle, LogOut, Edit3, Building, PenTool, Eye, 
-  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List, Download
+  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List, Download, Layers
 } from "lucide-react";
 import { numberToWords } from "@/lib/number-to-words";
 import { validateBinIin, validateIik, validateBik, validateRequiredField, validateAmount } from "@/lib/validation";
 import { PDFGenerator, type InvoicePDFData } from "@/lib/pdf-generator";
 import { ExcelGenerator, type ExcelInvoiceData } from "@/lib/excel-generator";
+import { serviceTemplates, getTemplateById } from "@/lib/service-templates";
 
 type Mode = 'edit' | 'supplier' | 'signature' | 'preview';
 
@@ -99,6 +100,7 @@ export default function InvoiceGenerator() {
   const signatureInputRef = useRef<HTMLInputElement>(null);
   const stampInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [showTemplates, setShowTemplates] = useState(false);
   const queryClient = useQueryClient();
 
   const logoutMutation = useMutation({
@@ -532,6 +534,81 @@ export default function InvoiceGenerator() {
     }
   };
 
+  const applyTemplate = (templateId: string) => {
+    const template = getTemplateById(templateId);
+    if (!template) return;
+
+    // Заменяем все услуги на услуги из шаблона
+    const templateServices = template.services.map(service => ({
+      name: service.name,
+      quantity: 1,
+      unit: service.unit,
+      price: service.price || 0,
+      total: service.price || 0
+    }));
+
+    setInvoiceData(prev => ({
+      ...prev,
+      services: templateServices
+    }));
+
+    setShowTemplates(false);
+    toast({
+      title: "Шаблон применен",
+      description: `Загружены услуги из категории "${template.name}"`,
+    });
+  };
+
+  const renderTemplatesModal = () => (
+    showTemplates && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Выберите шаблон услуг</h2>
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowTemplates(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {serviceTemplates.map(template => (
+              <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{template.name}</CardTitle>
+                  <p className="text-sm text-gray-600">{template.category}</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1 mb-4">
+                    {template.services.slice(0, 3).map((service, index) => (
+                      <p key={index} className="text-sm text-gray-700">
+                        • {service.name} ({service.unit})
+                        {service.price && ` - ${service.price.toLocaleString()} ₸`}
+                      </p>
+                    ))}
+                    {template.services.length > 3 && (
+                      <p className="text-sm text-gray-500">
+                        +{template.services.length - 3} еще...
+                      </p>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={() => applyTemplate(template.id)}
+                    className="w-full"
+                  >
+                    Применить шаблон
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  );
+
   const renderModeButtons = () => (
     <nav className="p-4 space-y-2">
       <Button
@@ -656,10 +733,16 @@ export default function InvoiceGenerator() {
               <FileText className="w-5 h-5 mr-2" />
               Товары и услуги
             </h3>
-            <Button onClick={addService} className="btn-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              Добавить
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowTemplates(true)} variant="outline">
+                <Layers className="w-4 h-4 mr-2" />
+                Шаблоны
+              </Button>
+              <Button onClick={addService} className="btn-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                Добавить
+              </Button>
+            </div>
           </div>
           
           <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -1351,6 +1434,7 @@ export default function InvoiceGenerator() {
           </div>
         </div>
       )}
+      {renderTemplatesModal()}
     </div>
   );
 }

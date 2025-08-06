@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, Send, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileText, Download, Send, Loader2, Search, Edit, Copy, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Invoice {
@@ -23,6 +26,9 @@ interface Invoice {
 
 export default function InvoicesPage() {
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid'>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'number' | 'amount'>('date');
   
   const { data: invoices = [], isLoading, error } = useQuery({
     queryKey: ['/api/invoices'],
@@ -34,6 +40,31 @@ export default function InvoicesPage() {
       return response.json();
     }
   });
+
+  // Фильтрация и сортировка счетов
+  const filteredInvoices = invoices
+    .filter((invoice: Invoice) => {
+      const matchesSearch = 
+        invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        invoice.buyer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        invoice.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a: Invoice, b: Invoice) => {
+      switch (sortBy) {
+        case 'date':
+          return new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime();
+        case 'number':
+          return a.invoiceNumber.localeCompare(b.invoiceNumber);
+        case 'amount':
+          return b.totalAmount - a.totalAmount;
+        default:
+          return 0;
+      }
+    });
 
   const handleDownloadPDF = async (invoice: Invoice) => {
     try {
@@ -82,6 +113,38 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleEditInvoice = (invoice: Invoice) => {
+    // Переход к редактированию счета
+    window.location.href = `/invoices/edit/${invoice.id}`;
+  };
+
+  const handleCopyInvoice = async (invoice: Invoice) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/copy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) throw new Error('Failed to copy invoice');
+      
+      const newInvoice = await response.json();
+      
+      toast({
+        title: "Счет скопирован",
+        description: `Создан новый счет № ${newInvoice.invoiceNumber}`,
+      });
+      
+      // Обновляем список
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось скопировать счет",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {
       case 'draft': return 'bg-gray-500';
@@ -121,6 +184,56 @@ export default function InvoicesPage() {
           </div>
         </div>
 
+        {/* Поиск и фильтры */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Filter className="w-5 h-5 mr-2" />
+              Поиск и фильтры
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Поиск по номеру, покупателю..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Статус" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все статусы</SelectItem>
+                  <SelectItem value="draft">Черновик</SelectItem>
+                  <SelectItem value="sent">Отправлен</SelectItem>
+                  <SelectItem value="paid">Оплачен</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Сортировка" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">По дате</SelectItem>
+                  <SelectItem value="number">По номеру</SelectItem>
+                  <SelectItem value="amount">По сумме</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="text-sm text-gray-500 flex items-center">
+                Найдено: {filteredInvoices.length} из {invoices.length}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Telegram Info Card */}
         <Card className="bg-blue-50 border-blue-200 mb-6">
           <CardContent className="p-6">
@@ -130,7 +243,7 @@ export default function InvoicesPage() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-blue-900 mb-2">
-                  📱 Telegram бот интеграция
+                  Telegram бот интеграция
                 </h3>
                 <p className="text-blue-700 text-sm mb-3">
                   Теперь вы можете просматривать все свои счета прямо в Telegram! 
@@ -185,7 +298,7 @@ export default function InvoicesPage() {
               </CardContent>
             </Card>
           ) : (
-            invoices.map((invoice) => (
+            filteredInvoices.map((invoice) => (
               <Card key={invoice.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -227,6 +340,22 @@ export default function InvoicesPage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditInvoice(invoice)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Редактировать
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleCopyInvoice(invoice)}
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Копировать
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm"

@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // File Upload
+  // File Upload with security checks
   app.post("/api/upload/:type", upload.single('file'), async (req, res) => {
     try {
       if (!req.session.userId) {
@@ -344,6 +344,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { type } = req.params; // 'signature' or 'stamp'
       if (!['signature', 'stamp'].includes(type)) {
         return res.status(400).json({ message: "Invalid file type" });
+      }
+
+      // Проверка типа файла
+      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ message: "Only image files (JPEG, PNG, GIF) are allowed" });
+      }
+
+      // Проверка размера файла (максимум 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB в байтах
+      if (req.file.size > maxSize) {
+        return res.status(400).json({ message: "File size must be less than 5MB" });
       }
 
       // In production, upload to cloud storage
@@ -450,6 +462,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Failed to send invoice via Telegram:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       res.status(500).json({ message: 'Failed to send invoice: ' + errorMessage });
+    }
+  });
+
+  // Copy invoice
+  app.post("/api/invoices/:id/copy", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const originalInvoice = await storage.getInvoiceById(req.params.id);
+      if (!originalInvoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Create new invoice based on original
+      const newInvoiceData = {
+        ...originalInvoice,
+        invoiceNumber: `${originalInvoice.invoiceNumber}-копия-${Date.now()}`,
+        invoiceDate: new Date().toISOString(),
+        status: 'draft' as const
+      };
+
+      const newInvoice = await storage.createInvoice(req.session.userId, newInvoiceData);
+      res.json(newInvoice);
+    } catch (error) {
+      console.error('Failed to copy invoice:', error);
+      res.status(500).json({ message: "Failed to copy invoice" });
     }
   });
 
