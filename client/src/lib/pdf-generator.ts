@@ -22,7 +22,14 @@ function transliterateText(text: string): string {
     'Ә': 'AE', 'Ғ': 'GH', 'Қ': 'Q', 'Ң': 'NG', 'Ө': 'OE', 'Ұ': 'U', 'Ү': 'UE', 'Һ': 'H', 'І': 'I'
   };
   
-  return text.split('').map(char => translitMap[char] || char).join('');
+  return text.split('').map(char => {
+    // Если это мягкий или твердый знак, возвращаем пустую строку
+    if (char === 'ь' || char === 'ъ' || char === 'Ь' || char === 'Ъ') {
+      return '';
+    }
+    // Иначе используем карту транслитерации или оставляем символ как есть
+    return translitMap[char] || char;
+  }).join('');
 }
 
 export interface InvoicePDFData {
@@ -280,13 +287,19 @@ export class PDFGenerator {
     pdf.setFontSize(L.invoiceTitle.fontSize);
     pdf.setFont('helvetica', 'bold');
     
-    const dateStr = new Date(data.invoiceDate).toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    }).replace('г.', '');
+    // Правильное форматирование даты
+    const date = new Date(data.invoiceDate);
+    const day = date.getDate();
+    const months = [
+      'yanvarya', 'fevralya', 'marta', 'aprelya', 'maya', 'iyunya',
+      'iyulya', 'avgusta', 'sentyabrya', 'oktyabrya', 'noyabrya', 'dekabrya'
+    ];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    const dateStr = `${day} ${month} ${year}`;
     
-    pdf.text(prepareText(`Счет на оплату № ${data.invoiceNumber} от ${dateStr}`), L.leftMargin, L.invoiceTitle.y);
+    const titleText = prepareText(`Schet na oplatu No ${data.invoiceNumber} ot ${dateStr}`);
+    pdf.text(titleText, L.leftMargin, L.invoiceTitle.y);
     
     // Линия под заголовком
     const tableWidth = L.pageWidth - L.leftMargin - L.rightMargin;
@@ -341,7 +354,7 @@ export class PDFGenerator {
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
     
-    const headers = ['№', prepareText('Код'), prepareText('Наименование'), prepareText('Кол-во'), prepareText('Ед.'), prepareText('Цена'), prepareText('Сумма')];
+    const headers = ['No', 'Kod', 'Naimenovanie', 'Kol-vo', 'Ed.', 'Tsena', 'Summa'];
     currentX = L.leftMargin;
     headers.forEach((header, i) => {
       const col = ST.cols[i];
@@ -389,7 +402,7 @@ export class PDFGenerator {
     // Строка итого
     pdf.setFont('helvetica', 'bold');
     const totalX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
-    pdf.text(prepareText('Итого:'), totalX + 12.5, currentY + 5, { align: 'center' });
+    pdf.text('Itogo:', totalX + 12.5, currentY + 5, { align: 'center' });
     pdf.text(this.formatMoney(data.totalAmount), 
              L.leftMargin + tableWidth - 2, currentY + 5, { align: 'right' });
     
@@ -405,9 +418,9 @@ export class PDFGenerator {
     const y1 = startY + 10;
     const y2 = y1 + 6;
     
-    pdf.text(prepareText(`Всего наименований ${data.services.length} на сумму ${this.formatMoney(data.totalAmount)} KZT`), 
+    pdf.text(prepareText(`Vsego naimenovaniy ${data.services.length} na summu ${this.formatMoney(data.totalAmount)} KZT`), 
              L.leftMargin, y1);
-    pdf.text(prepareText(`Всего к оплате ${data.totalAmountWords}`), L.leftMargin, y2);
+    pdf.text(prepareText(`Vsego k oplate ${data.totalAmountWords}`), L.leftMargin, y2);
     
     return y2 + 15;
   }
@@ -422,8 +435,8 @@ export class PDFGenerator {
     // Текст
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
-    pdf.text(prepareText('Исполнитель:'), L.leftMargin, startY + 12);
-    pdf.text(prepareText('/бухгалтер/'), L.signature.signatureX + 30, startY + 12);
+    pdf.text('Ispolnitel:', L.leftMargin, startY + 12);
+    pdf.text('/bukhgalter/', L.signature.signatureX + 30, startY + 12);
     
     // Подпись
     if (signature) {
