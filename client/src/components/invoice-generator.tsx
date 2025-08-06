@@ -925,10 +925,10 @@ export default function InvoiceGenerator() {
                 id="supplierIik"
                 value={invoiceData.supplier.iik}
                 onChange={(e) => updateField('supplier', 'iik', e.target.value)}
-                placeholder="KZ + 18 цифр"
+                placeholder="KZ + 16-20 символов"
               />
               {invoiceData.supplier.iik && !validateIik(invoiceData.supplier.iik) && (
-                <p className="text-sm text-red-500 mt-1">ИИК должен начинаться с KZ и содержать 20 символов</p>
+                <p className="text-sm text-red-500 mt-1">ИИК должен начинаться с KZ и содержать от 18 до 22 символов</p>
               )}
             </div>
           </div>

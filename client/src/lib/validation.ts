@@ -5,8 +5,9 @@ export function validateBinIin(value: string): boolean {
 }
 
 export function validateIik(value: string): boolean {
-  // ИИК должен начинаться с KZ и содержать 20 символов
-  return /^KZ\d{18}$/.test(value);
+  // ИИК должен начинаться с KZ и содержать от 18 до 22 символов (включая буквы и цифры)
+  // Реальные ИИК в Казахстане могут быть разной длины
+  return /^KZ[A-Z0-9]{16,20}$/.test(value);
 }
 
 export function validateBik(value: string): boolean {
