@@ -61,20 +61,21 @@ export class PDFGenerator {
     // Create a bordered box for payment details
     pdf.rect(margin, 45, contentWidth, 35);
     
-    // Beneficiary info - better layout
+    // Beneficiary info - exact layout like in the sample
     pdf.text('Бенефициар:', margin + 5, 52);
-    pdf.text('ИИК:', margin + 100, 52);
+    pdf.text('ИИК', margin + 120, 52);
+    pdf.text('Кбе', margin + 160, 52);
     pdf.text(data.supplier.name, margin + 5, 57);
-    pdf.text(data.supplier.iik, margin + 100, 57);
+    pdf.text(data.supplier.iik, margin + 120, 57);
+    pdf.text(data.supplier.kbe, margin + 160, 57);
     pdf.text(`БИН: ${data.supplier.bin}`, margin + 5, 62);
     
-    pdf.text(`Кбе: ${data.supplier.kbe}`, margin + 100, 62);
-    pdf.text('БИК:', margin + 5, 67);
-    pdf.text('Код назначения платежа:', margin + 100, 67);
-    pdf.text(data.supplier.bik, margin + 5, 72);
-    pdf.text(data.supplier.paymentCode, margin + 100, 72);
-    
-    pdf.text(`Банк бенефициара: ${data.supplier.bank}`, margin + 5, 77);
+    pdf.text('Банк бенефициара:', margin + 5, 67);
+    pdf.text('БИК', margin + 120, 67);
+    pdf.text('Код назначения платежа', margin + 160, 67);
+    pdf.text(data.supplier.bank, margin + 5, 72);
+    pdf.text(data.supplier.bik, margin + 120, 72);
+    pdf.text(data.supplier.paymentCode, margin + 160, 72);
     
     // Invoice title
     pdf.setFontSize(14);
