@@ -61,11 +61,16 @@ class InvoiceTelegramBot {
 
       if (!telegramId) return;
 
+      console.log('Telegram /invoices command from user:', telegramId);
+
       const user = await storage.getUserByTelegramId(telegramId);
       if (!user) {
+        console.log('User not found for telegramId:', telegramId);
         await this.bot?.sendMessage(chatId, "Пожалуйста, авторизуйтесь на веб-платформе");
         return;
       }
+
+      console.log('User found:', user.id);
 
       const invoices = await storage.getInvoicesByUserId(user.id);
       
@@ -79,9 +84,9 @@ class InvoiceTelegramBot {
         for (const invoice of invoices) {
           const message = `🧾 Счет №${invoice.invoiceNumber}\n` +
                          `📅 Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n` +
-                         `💰 Сумма: ${invoice.totalAmount?.toLocaleString('ru-RU')} ₸\n` +
-                         `🏢 Поставщик: ${invoice.supplierName}\n` +
-                         `🏪 Покупатель: ${invoice.buyerName}`;
+                         `💰 Сумма: ${invoice.totalAmount} ₸\n` +
+                         `🏢 Поставщик: Данные из веб-платформы\n` +
+                         `🏪 Покупатель: Данные из веб-платформы`;
 
           await this.bot?.sendMessage(chatId, message, {
             reply_markup: {
@@ -99,7 +104,7 @@ class InvoiceTelegramBot {
         let message = "📋 Ваши счета:\n\n";
         for (const invoice of invoices.slice(0, 10)) {
           message += `🧾 №${invoice.invoiceNumber} от ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n`;
-          message += `💰 Сумма: ${invoice.totalAmount?.toLocaleString('ru-RU')} ₸\n`;
+          message += `💰 Сумма: ${invoice.totalAmount} ₸\n`;
           message += `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}\n\n`;
         }
 
