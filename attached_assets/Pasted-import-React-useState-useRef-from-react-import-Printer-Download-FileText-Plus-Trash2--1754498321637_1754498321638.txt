@@ -1,0 +1,167 @@
+import React, { useState, useRef } from 'react';
+import { Printer, Download, FileText, Plus, Trash2, Upload, X } from 'lucide-react';
+
+const InvoiceGenerator = () => {
+  const [invoiceData, setInvoiceData] = useState({
+    invoiceNumber: '2',
+    invoiceDate: new Date().toLocaleDateString('ru-RU'),
+    
+    // Поставщик (ваши данные)
+    supplier: {
+      name: 'Индивидуальный предприниматель Sonar Group',
+      bin: '960517300238',
+      address: 'г. Шымкент, ул. Микрорайон 8 д. 10 кв. (офис)',
+      bank: 'АО "Народный Банк Казахстана"',
+      bik: 'HSBKKZKX',
+      iik: 'KZ53601A291000781231',
+      kbe: '19',
+      paymentCode: '859'
+    },
+    
+    // Покупатель
+    buyer: {
+      name: 'ТОО "White Label"',
+      bin: '211240012284',
+      address: 'Казахстан, Алматы. Хаджимукана 22/6'
+    },
+    
+    // Услуги
+    services: [
+      {
+        id: 1,
+        name: 'Интеграция чат ботов',
+        quantity: 1.0,
+        unit: 'Услуга',
+        price: 300000,
+        total: 300000
+      }
+    ],
+    
+    contract: 'Без договора'
+  });
+
+  const [isEditing, setIsEditing] = useState(true);
+  const [editingSupplier, setEditingSupplier] = useState(false);
+  const [editingLayout, setEditingLayout] = useState(false);
+  const [signature, setSignature] = useState(null);
+  const [stamp, setStamp] = useState(null);
+  const [signatureSettings, setSignatureSettings] = useState({
+    width: 200,
+    height: 70,
+    position: 'right' // 'left', 'center', 'right'
+  });
+  const [stampSettings, setStampSettings] = useState({
+    size: 100,
+    position: 'left' // 'left', 'center', 'right'
+  });
+  const signatureInputRef = useRef(null);
+  const stampInputRef = useRef(null);
+
+  const updateField = (section, field, value) => {
+    setInvoiceData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  const updateService = (index, field, value) => {
+    const newServices = [...invoiceData.services];
+    newServices[index] = {
+      ...newServices[index],
+      [field]: value
+    };
+    
+    if (field === 'quantity' || field === 'price') {
+      newServices[index].total = newServices[index].quantity * newServices[index].price;
+    }
+    
+    setInvoiceData(prev => ({
+      ...prev,
+      services: newServices
+    }));
+  };
+
+  const addService = () => {
+    const newService = {
+      id: invoiceData.services.length + 1,
+      name: '',
+      quantity: 1.0,
+      unit: 'Услуга',
+      price: 0,
+      total: 0
+    };
+    
+    setInvoiceData(prev => ({
+      ...prev,
+      services: [...prev.services, newService]
+    }));
+  };
+
+  const removeService = (index) => {
+    setInvoiceData(prev => ({
+      ...prev,
+      services: prev.services.filter((_, i) => i !== index)
+    }));
+  };
+
+  const getTotalAmount = () => {
+    return invoiceData.services.reduce((sum, service) => sum + service.total, 0);
+  };
+
+  const numberToWords = (num) => {
+    const ones = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+    const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+    const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+    const thousands = ['', 'одна тысяча', 'две тысячи', 'три тысячи', 'четыре тысячи', 'пять тысяч', 'шесть тысяч', 'семь тысяч', 'восемь тысяч', 'девять тысяч'];
+    
+    if (num === 0) return 'ноль тенге';
+    if (num < 10) return ones[num] + ' тенге';
+    if (num < 100) return (tens[Math.floor(num/10)] + ' ' + ones[num%10]).trim() + ' тенге';
+    if (num < 1000) return (hundreds[Math.floor(num/100)] + ' ' + tens[Math.floor((num%100)/10)] + ' ' + ones[num%10]).trim() + ' тенге';
+    
+    // Для больших чисел - упрощенная версия
+    const thousandsCount = Math.floor(num / 1000);
+    const remainder = num % 1000;
+    
+    let result = '';
+    if (thousandsCount > 0) {
+      if (thousandsCount < 10) {
+        result = thousands[thousandsCount];
+      } else {
+        result = thousandsCount + ' тысяч';
+      }
+    }
+    
+    if (remainder > 0) {
+      if (remainder < 10) {
+        result += ' ' + ones[remainder];
+      } else if (remainder < 100) {
+        result += ' ' + tens[Math.floor(remainder/10)] + ' ' + ones[remainder%10];
+      } else {
+        result += ' ' + hundreds[Math.floor(remainder/100)] + ' ' + tens[Math.floor((remainder%100)/10)] + ' ' + ones[remainder%10];
+      }
+    }
+    
+    return result.trim() + ' тенге';
+  };
+
+  const handleImageUpload = (file, type) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (type === 'signature') {
+          setSignature(e.target.result);
+        } else if (type === 'stamp') {
+          setStamp(e.target.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = (type) => {
+    if (type === 'signature') {
+      setSignatu...
