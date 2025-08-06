@@ -220,11 +220,86 @@ export default function InvoiceGenerator() {
   };
 
   const sendToTelegram = async () => {
-    // This would send the current invoice data to Telegram bot
-    toast({
-      title: "Отправлено в Telegram",
-      description: "Счет отправлен в Telegram бот",
-    });
+    try {
+      // Generate PDF data from the current invoice
+      const element = document.getElementById('invoiceDocument');
+      if (!element) {
+        toast({
+          title: "Ошибка",
+          description: "Документ счета не найден",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Use html2canvas and jspdf to generate PDF
+      const canvas = await import('html2canvas').then(m => m.default(element, {
+        scale: 2,
+        useCORS: true
+      }));
+      
+      const pdf = await import('jspdf').then(m => {
+        const jsPDF = m.jsPDF;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 295; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+
+        let position = 0;
+        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          doc.addPage();
+          doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        return doc.output('blob');
+      });
+      
+      // Convert blob to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        
+        try {
+          await apiRequest('/api/telegram/send-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              invoiceId: 'temp-' + Date.now(),
+              pdfData: base64data
+            })
+          });
+          
+          toast({
+            title: "Успешно отправлено!",
+            description: "PDF файл отправлен в ваш Telegram",
+            variant: "default"
+          });
+        } catch (error) {
+          console.error('Failed to send to Telegram:', error);
+          toast({
+            title: "Ошибка отправки",
+            description: "Не удалось отправить файл в Telegram. Проверьте подключение к боту.",
+            variant: "destructive"
+          });
+        }
+      };
+      reader.readAsDataURL(pdf as Blob);
+      
+    } catch (error) {
+      console.error('Failed to generate PDF for Telegram:', error);
+      toast({
+        title: "Ошибка генерации",
+        description: "Не удалось создать PDF файл",
+        variant: "destructive"
+      });
+    }
   };
 
   const renderModeButtons = () => (

@@ -34,43 +34,52 @@ export class PDFGenerator {
   static async generateInvoicePDF(data: InvoicePDFData, signature?: string, stamp?: string): Promise<Blob> {
     const pdf = new jsPDF('p', 'mm', 'a4');
     
+    // Set margins for proper A4 printing (like shown in the screenshot)
+    const margin = 10;
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const contentWidth = pageWidth - (margin * 2);
+    
     // Set font
     pdf.setFont('helvetica', 'normal');
     
-    // Warning text
-    pdf.setFontSize(8);
-    pdf.text('Внимание! Оплата данного счета означает согласие с условиями поставки товара.', 20, 20);
-    pdf.text('Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе.', 20, 25);
-    pdf.text('Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом,', 20, 30);
-    pdf.text('при наличии доверенности и документов удостоверяющих личность.', 20, 35);
+    // Warning text - smaller font, better spacing
+    pdf.setFontSize(7);
+    pdf.text('Внимание! Оплата данного счета означает согласие с условиями поставки товара.', margin, 15);
+    pdf.text('Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе.', margin, 19);
+    pdf.text('Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом,', margin, 23);
+    pdf.text('при наличии доверенности и документов удостоверяющих личность.', margin, 27);
     
     // Payment details header
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Образец платежного поручения', 105, 50, { align: 'center' });
+    pdf.text('Образец платежного поручения', pageWidth/2, 40, { align: 'center' });
     
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
     
-    // Beneficiary info
-    pdf.text('Бенефициар:', 20, 60);
-    pdf.text('ИИК:', 150, 60);
-    pdf.text(data.supplier.name, 20, 65);
-    pdf.text(data.supplier.iik, 150, 65);
-    pdf.text(`БИН: ${data.supplier.bin}`, 20, 70);
+    // Create a bordered box for payment details
+    pdf.rect(margin, 45, contentWidth, 35);
     
-    pdf.text(`Кбе: ${data.supplier.kbe}`, 150, 70);
-    pdf.text('БИК:', 20, 75);
-    pdf.text('Код назначения платежа:', 150, 75);
-    pdf.text(data.supplier.bik, 20, 80);
-    pdf.text(data.supplier.paymentCode, 150, 80);
+    // Beneficiary info - better layout
+    pdf.text('Бенефициар:', margin + 5, 52);
+    pdf.text('ИИК:', margin + 100, 52);
+    pdf.text(data.supplier.name, margin + 5, 57);
+    pdf.text(data.supplier.iik, margin + 100, 57);
+    pdf.text(`БИН: ${data.supplier.bin}`, margin + 5, 62);
     
-    pdf.text(`Банк бенефициара: ${data.supplier.bank}`, 20, 85);
+    pdf.text(`Кбе: ${data.supplier.kbe}`, margin + 100, 62);
+    pdf.text('БИК:', margin + 5, 67);
+    pdf.text('Код назначения платежа:', margin + 100, 67);
+    pdf.text(data.supplier.bik, margin + 5, 72);
+    pdf.text(data.supplier.paymentCode, margin + 100, 72);
+    
+    pdf.text(`Банк бенефициара: ${data.supplier.bank}`, margin + 5, 77);
     
     // Invoice title
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`Счет на оплату № ${data.invoiceNumber} от ${new Date(data.invoiceDate).toLocaleDateString('ru-RU')}`, 105, 100, { align: 'center' });
+    pdf.text(`Счет на оплату № ${data.invoiceNumber} от ${new Date(data.invoiceDate).toLocaleDateString('ru-RU')}`, pageWidth/2, 95, { align: 'center' });
     
     // Parties information
     pdf.setFontSize(9);

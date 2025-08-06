@@ -322,9 +322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve uploaded files
-  app.use('/uploads', (req, res, next) => {
-    // In production, this would be handled by cloud storage
-    res.sendFile(path.resolve(process.cwd(), 'uploads', req.path));
+  app.use('/uploads', (req, res) => {
+    res.sendFile(path.resolve(process.cwd(), 'uploads', req.path.substring(1)));
   });
 
   // Telegram Bot Webhook
@@ -354,6 +353,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: 'Failed to get bot info' });
+    }
+  });
+
+  // Send invoice via Telegram
+  app.post('/api/telegram/send-invoice', async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const { invoiceId, pdfData } = req.body;
+      
+      if (!invoiceId || !pdfData) {
+        return res.status(400).json({ message: 'Invoice ID and PDF data required' });
+      }
+
+      // For now, we'll create a temporary user object since we have the session
+      const user = { telegramId: req.session.telegramId }; // Use the telegramId from session
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const invoice = await storage.getInvoiceById(invoiceId);
+      if (!invoice || invoice.userId !== req.session.userId) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+
+      // Convert base64 PDF data to buffer
+      const pdfBuffer = Buffer.from(pdfData.split(',')[1], 'base64');
+      
+      if (telegramBot && user.telegramId) {
+        await telegramBot.sendInvoiceWithPDF(user.telegramId, invoice, pdfBuffer);
+        res.json({ success: true, message: 'Invoice sent to Telegram' });
+      } else {
+        res.status(400).json({ message: 'Telegram bot not available or user not linked' });
+      }
+    } catch (error) {
+      console.error('Failed to send invoice via Telegram:', error);
+      res.status(500).json({ message: 'Failed to send invoice' });
     }
   });
 

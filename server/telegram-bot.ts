@@ -135,6 +135,28 @@ class InvoiceTelegramBot {
     }
   }
 
+  async sendInvoiceWithPDF(telegramId: string, invoice: any, pdfBuffer: Buffer) {
+    if (!this.bot) return;
+
+    try {
+      const message = `📄 Счет на оплату №${invoice.invoiceNumber}\n\n` +
+        `📅 Дата: ${new Date(invoice.invoiceDate).toLocaleDateString('ru-RU')}\n` +
+        `💰 Сумма: ${invoice.totalAmount.toLocaleString('ru-RU')} ₸\n` +
+        `🏢 Поставщик: ${invoice.supplierName}\n` +
+        `🏪 Покупатель: ${invoice.buyerName}`;
+
+      await this.bot.sendDocument(telegramId, pdfBuffer, {
+        caption: message,
+        parse_mode: 'HTML'
+      }, {
+        filename: `Счет_${invoice.invoiceNumber}_${new Date().toISOString().slice(0,10)}.pdf`
+      });
+    } catch (error) {
+      console.error('Failed to send invoice with PDF:', error);
+      throw error;
+    }
+  }
+
   async processUpdate(update: any) {
     if (!this.bot) return;
     
