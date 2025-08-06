@@ -59,9 +59,47 @@ export default function InvoicesPage() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Мои счета</h1>
-          <p className="text-gray-600 mt-2">Управление созданными счетами на оплату</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Мои счета</h1>
+              <p className="text-gray-600 mt-2">Управление созданными счетами на оплату</p>
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = '/'}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Создать счет
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* Telegram Info Card */}
+        <Card className="bg-blue-50 border-blue-200 mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Send className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-2">
+                  📱 Telegram бот интеграция
+                </h3>
+                <p className="text-blue-700 text-sm mb-3">
+                  Теперь вы можете просматривать все свои счета прямо в Telegram! 
+                  Откройте бота и используйте команду <code>/invoices</code> для просмотра списка счетов.
+                </p>
+                <div className="flex gap-2 text-xs text-blue-600">
+                  <span>• <strong>/start</strong> - Начать работу</span>
+                  <span>• <strong>/invoices</strong> - Список счетов</span>
+                  <span>• <strong>/help</strong> - Помощь</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4">
           {invoices.length === 0 ? (

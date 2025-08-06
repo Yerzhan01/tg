@@ -74,14 +74,42 @@ class InvoiceTelegramBot {
         return;
       }
 
-      let message = "📋 Ваши счета:\n\n";
-      for (const invoice of invoices.slice(0, 10)) {
-        message += `🧾 №${invoice.invoiceNumber} от ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n`;
-        message += `💰 Сумма: ${invoice.totalAmount} ₸\n`;
-        message += `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}\n\n`;
-      }
+      if (invoices.length <= 5) {
+        // Show detailed list with buttons for few invoices
+        for (const invoice of invoices) {
+          const message = `🧾 Счет №${invoice.invoiceNumber}\n` +
+                         `📅 Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n` +
+                         `💰 Сумма: ${invoice.totalAmount?.toLocaleString('ru-RU')} ₸\n` +
+                         `🏢 Поставщик: ${invoice.supplierName}\n` +
+                         `🏪 Покупатель: ${invoice.buyerName}`;
 
-      await this.bot?.sendMessage(chatId, message);
+          await this.bot?.sendMessage(chatId, message, {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '📄 PDF', callback_data: `download_pdf_${invoice.id}` },
+                  { text: '📊 Excel', callback_data: `download_excel_${invoice.id}` }
+                ]
+              ]
+            }
+          });
+        }
+      } else {
+        // Show simple list for many invoices
+        let message = "📋 Ваши счета:\n\n";
+        for (const invoice of invoices.slice(0, 10)) {
+          message += `🧾 №${invoice.invoiceNumber} от ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n`;
+          message += `💰 Сумма: ${invoice.totalAmount?.toLocaleString('ru-RU')} ₸\n`;
+          message += `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}\n\n`;
+        }
+
+        if (invoices.length > 10) {
+          message += `\n... и еще ${invoices.length - 10} счетов\n`;
+          message += `Для скачивания файлов используйте веб-платформу`;
+        }
+
+        await this.bot?.sendMessage(chatId, message);
+      }
     });
 
     this.bot.onText(/\/create/, async (msg) => {
@@ -107,6 +135,60 @@ class InvoiceTelegramBot {
         `/create - Создать счет\n` +
         `/help - Эта справка`
       );
+    });
+
+    // Handle callback queries for file downloads
+    this.bot.on('callback_query', async (callbackQuery) => {
+      const chatId = callbackQuery.message?.chat.id;
+      const telegramId = callbackQuery.from.id.toString();
+      const data = callbackQuery.data;
+
+      if (!chatId || !data) return;
+
+      const user = await storage.getUserByTelegramId(telegramId);
+      if (!user) {
+        await this.bot?.answerCallbackQuery(callbackQuery.id, {
+          text: "Пожалуйста, авторизуйтесь на веб-платформе"
+        });
+        return;
+      }
+
+      try {
+        if (data.startsWith('download_pdf_')) {
+          const invoiceId = data.replace('download_pdf_', '');
+          await this.bot?.answerCallbackQuery(callbackQuery.id, {
+            text: "Генерируем PDF файл..."
+          });
+          
+          await this.bot?.sendMessage(chatId, "⏳ Генерация PDF файла, пожалуйста подождите...");
+          
+          // For now, send a message that PDF generation will be implemented
+          await this.bot?.sendMessage(chatId, 
+            "📄 PDF файл будет отправлен через веб-платформу.\n\n" +
+            "Используйте кнопку 'Отправить в Telegram' на веб-сайте для получения готового PDF файла."
+          );
+
+        } else if (data.startsWith('download_excel_')) {
+          const invoiceId = data.replace('download_excel_', '');
+          await this.bot?.answerCallbackQuery(callbackQuery.id, {
+            text: "Генерируем Excel файл..."
+          });
+          
+          await this.bot?.sendMessage(chatId, "⏳ Генерация Excel файла, пожалуйста подождите...");
+          
+          // For now, send a message that Excel generation will be implemented
+          await this.bot?.sendMessage(chatId, 
+            "📊 Excel файл будет отправлен через веб-платформу.\n\n" +
+            "Используйте функцию экспорта на веб-сайте для получения готового Excel файла."
+          );
+        }
+
+      } catch (error) {
+        console.error('Error handling callback query:', error);
+        await this.bot?.answerCallbackQuery(callbackQuery.id, {
+          text: "Произошла ошибка, попробуйте позже"
+        });
+      }
     });
   }
 
