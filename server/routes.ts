@@ -403,8 +403,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { invoiceId, pdfData } = req.body;
       
+      console.log('Send invoice request received');
+      console.log('Request body keys:', Object.keys(req.body));
+      console.log('Invoice ID:', invoiceId);
+      console.log('PDF data length:', pdfData ? pdfData.length : 'undefined');
+      
       if (!invoiceId || !pdfData) {
-        return res.status(400).json({ message: 'Invoice ID and PDF data required' });
+        console.log('Missing data - invoiceId:', !!invoiceId, 'pdfData:', !!pdfData);
+        return res.status(400).json({ message: 'Invoice ID and PDF data are required' });
       }
 
       // Get user's Telegram ID from session

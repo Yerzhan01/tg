@@ -315,6 +315,8 @@ export default function InvoiceGenerator() {
     try {
       // First save the invoice to the database
       const savedInvoice = await saveInvoiceToDatabase();
+      console.log('Saved invoice:', savedInvoice);
+      
       if (!savedInvoice) {
         toast({
           title: "Ошибка",
@@ -351,6 +353,11 @@ export default function InvoiceGenerator() {
         const base64data = reader.result as string;
         
         try {
+          console.log('Sending to Telegram:', {
+            invoiceId: savedInvoice.id,
+            pdfDataLength: base64data.length
+          });
+          
           const response = await fetch('/api/telegram/send-invoice', {
             method: 'POST',
             headers: { 
