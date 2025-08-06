@@ -340,6 +340,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bot setup and info endpoint
+  app.get('/api/telegram/bot-info', async (req, res) => {
+    try {
+      if (!process.env.TELEGRAM_BOT_TOKEN) {
+        return res.status(400).json({ message: 'Bot token not configured' });
+      }
+      
+      res.json({
+        botUsername: process.env.TELEGRAM_BOT_USERNAME,
+        webhookUrl: `${process.env.REPLIT_DEV_DOMAIN || req.get('host')}/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`,
+        configured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME)
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to get bot info' });
+    }
+  });
+
   // Send invoice to Telegram
   app.post("/api/invoices/:id/send-to-telegram", async (req, res) => {
     try {

@@ -52,7 +52,8 @@ export default function TelegramAuth({ onSuccess }: TelegramAuthProps) {
     // Load Telegram Widget script
     const script = document.createElement('script');
     script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.setAttribute('data-telegram-login', import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'your_bot_username');
+    const botUsername = 'invoicekzbot'; // Use the actual bot username from the API
+    script.setAttribute('data-telegram-login', botUsername);
     script.setAttribute('data-size', 'large');
     script.setAttribute('data-onauth', 'TelegramLoginWidget.dataOnauth(user)');
     script.setAttribute('data-request-access', 'write');

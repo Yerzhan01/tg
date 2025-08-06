@@ -10,6 +10,19 @@ class InvoiceTelegramBot {
     if (token) {
       this.bot = new TelegramBot(token, { polling: false });
       this.setupCommands();
+      this.setupWebhook();
+    }
+  }
+
+  private async setupWebhook() {
+    if (!this.bot) return;
+    
+    try {
+      const webhookUrl = `${process.env.REPLIT_DEV_DOMAIN || 'https://bc700157-2325-4ed8-89d2-b630caa0879c-00-358a4svxmccgk.picard.replit.dev'}/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
+      await this.bot.setWebHook(webhookUrl);
+      console.log('Telegram webhook set to:', webhookUrl);
+    } catch (error) {
+      console.error('Failed to set Telegram webhook:', error);
     }
   }
 
