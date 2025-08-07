@@ -67,6 +67,28 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(invoices).where(eq(invoices.userId, userId));
   }
 
+  async getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]> {
+    const userInvoices = await db.select().from(invoices).where(eq(invoices.userId, userId));
+    const result: InvoiceWithDetails[] = [];
+
+    for (const invoice of userInvoices) {
+      const supplier = await this.getSupplierById(invoice.supplierId);
+      const buyer = await this.getBuyerById(invoice.buyerId);
+      const items = await this.getInvoiceItemsByInvoiceId(invoice.id);
+
+      if (supplier && buyer) {
+        result.push({
+          ...invoice,
+          supplier,
+          buyer,
+          items
+        });
+      }
+    }
+
+    return result;
+  }
+
   async getInvoiceById(id: string): Promise<InvoiceWithDetails | undefined> {
     const invoice = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
     if (!invoice[0]) return undefined;

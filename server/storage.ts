@@ -23,6 +23,7 @@ export interface IStorage {
 
   // Invoices
   getInvoicesByUserId(userId: string): Promise<Invoice[]>;
+  getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]>;
   getInvoiceById(id: string): Promise<InvoiceWithDetails | undefined>;
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
   updateInvoice(id: string, invoice: Partial<Invoice>): Promise<Invoice | undefined>;
@@ -135,6 +136,28 @@ export class MemStorage implements IStorage {
   // Invoices
   async getInvoicesByUserId(userId: string): Promise<Invoice[]> {
     return Array.from(this.invoices.values()).filter(invoice => invoice.userId === userId);
+  }
+
+  async getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]> {
+    const invoices = Array.from(this.invoices.values()).filter(invoice => invoice.userId === userId);
+    const result: InvoiceWithDetails[] = [];
+
+    for (const invoice of invoices) {
+      const supplier = await this.getSupplierById(invoice.supplierId);
+      const buyer = await this.getBuyerById(invoice.buyerId);
+      const items = await this.getInvoiceItemsByInvoiceId(invoice.id);
+
+      if (supplier && buyer) {
+        result.push({
+          ...invoice,
+          supplier,
+          buyer,
+          items
+        });
+      }
+    }
+
+    return result;
   }
 
   async getInvoiceById(id: string): Promise<InvoiceWithDetails | undefined> {

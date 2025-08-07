@@ -83,10 +83,11 @@ class InvoiceTelegramBot {
           return;
         }
 
-        const invoices = await storage.getInvoicesByUserId(user.id);
-        console.log('Found invoices:', invoices.length);
+        // Временно используем getInvoicesByUserId и для каждого счета получаем полные данные
+        const basicInvoices = await storage.getInvoicesByUserId(user.id);
+        console.log('Found invoices:', basicInvoices.length);
         
-        if (invoices.length === 0) {
+        if (basicInvoices.length === 0) {
           console.log('No invoices found, sending empty message');
           await this.bot?.sendMessage(chatId, "У вас пока нет созданных счетов");
           return;
@@ -94,9 +95,13 @@ class InvoiceTelegramBot {
 
         console.log('Processing invoices display...');
 
-        if (invoices.length <= 5) {
+        if (basicInvoices.length <= 5) {
         // Show detailed list with buttons for few invoices
-        for (const invoice of invoices) {
+        for (const basicInvoice of basicInvoices) {
+          // Получаем полные данные для каждого счета
+          const invoice = await storage.getInvoiceById(basicInvoice.id);
+          if (!invoice) continue;
+
           const message = `🧾 Счет №${invoice.invoiceNumber}\n` +
                          `📅 Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n` +
                          `💰 Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n` +
@@ -118,14 +123,14 @@ class InvoiceTelegramBot {
       } else {
         // Show simple list for many invoices
         let message = "📋 Ваши счета:\n\n";
-        for (const invoice of invoices.slice(0, 10)) {
+        for (const invoice of basicInvoices.slice(0, 10)) {
           message += `🧾 №${invoice.invoiceNumber} от ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n`;
           message += `💰 Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n`;
           message += `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}\n\n`;
         }
 
-        if (invoices.length > 10) {
-          message += `\n... и еще ${invoices.length - 10} счетов\n`;
+        if (basicInvoices.length > 10) {
+          message += `\n... и еще ${basicInvoices.length - 10} счетов\n`;
           message += `Для скачивания файлов используйте веб-платформу`;
         }
 
