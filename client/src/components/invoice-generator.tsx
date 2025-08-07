@@ -1152,8 +1152,8 @@ export default function InvoiceGenerator() {
             <div className="flex items-center space-x-2">
               <Label htmlFor="status" className="text-sm font-medium">Статус:</Label>
               <Select value={invoiceStatus} onValueChange={(value: 'draft' | 'sent' | 'paid') => setInvoiceStatus(value)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Выберите статус" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">🟡 Черновик</SelectItem>
@@ -1165,20 +1165,20 @@ export default function InvoiceGenerator() {
             
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2">
-              <Button onClick={downloadPDF} variant="outline" className="mobile-button sm:w-auto text-xs sm:text-sm">
-                <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <Button onClick={downloadPDF} variant="outline" className="px-3 py-2 text-sm">
+                <FileText className="w-4 h-4 mr-2" />
                 PDF
               </Button>
-              <Button onClick={downloadExcel} variant="outline" className="mobile-button sm:w-auto text-xs sm:text-sm">
-                <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <Button onClick={downloadExcel} variant="outline" className="px-3 py-2 text-sm">
+                <Download className="w-4 h-4 mr-2" />
                 Excel
               </Button>
-              <Button onClick={printInvoice} variant="outline" className="mobile-button sm:w-auto text-xs sm:text-sm">
-                <Printer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <Button onClick={printInvoice} variant="outline" className="px-3 py-2 text-sm">
+                <Printer className="w-4 h-4 mr-2" />
                 Печать
               </Button>
-              <Button onClick={sendToTelegram} className="mobile-button sm:w-auto btn-primary text-xs sm:text-sm">
-                <Send className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <Button onClick={sendToTelegram} className="px-3 py-2 text-sm btn-primary">
+                <Send className="w-4 h-4 mr-2" />
                 Telegram
               </Button>
             </div>
