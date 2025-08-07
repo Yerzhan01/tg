@@ -115,6 +115,11 @@ class InvoiceTelegramBot {
                 [
                   { text: '📄 PDF', callback_data: `download_pdf_${invoice.id}` },
                   { text: '📊 Excel', callback_data: `download_excel_${invoice.id}` }
+                ],
+                [
+                  { text: '📋 Детали', callback_data: `details_${invoice.id}` },
+                  { text: '📊 Статус', callback_data: `status_${invoice.id}` },
+                  { text: '📝 Копировать', callback_data: `copy_${invoice.id}` }
                 ]
               ]
             }
@@ -151,6 +156,21 @@ class InvoiceTelegramBot {
       );
     });
 
+    // Команда /search - поиск счетов
+    this.bot.onText(/\/search (.+)/, async (msg, match) => {
+      await this.handleSearchCommand(msg, match?.[1] || '');
+    });
+
+    // Команда /stats - статистика по счетам
+    this.bot.onText(/\/stats/, async (msg) => {
+      await this.handleStatsCommand(msg);
+    });
+
+    // Команда /settings - настройки уведомлений
+    this.bot.onText(/\/settings/, async (msg) => {
+      await this.handleSettingsCommand(msg);
+    });
+
     this.bot.onText(/\/help/, async (msg) => {
       const chatId = msg.chat.id;
       await this.bot?.sendMessage(chatId,
@@ -159,10 +179,15 @@ class InvoiceTelegramBot {
         `Возможности:\n` +
         `• Просмотр списка ваших счетов\n` +
         `• Получение готовых PDF и Excel файлов\n` +
+        `• Поиск и статистика по счетам\n` +
+        `• Управление статусами счетов\n` +
         `• Уведомления о новых счетах\n\n` +
         `Команды:\n` +
         `/start - Начать работу\n` +
         `/invoices - Список счетов\n` +
+        `/search <запрос> - Поиск счетов\n` +
+        `/stats - Статистика по счетам\n` +
+        `/settings - Настройки уведомлений\n` +
         `/create - Создать счет\n` +
         `/help - Эта справка`
       );
@@ -200,6 +225,30 @@ class InvoiceTelegramBot {
           });
           
           await this.sendExcelFile(chatId, invoiceId, user.id);
+
+        } else if (data.startsWith('details_')) {
+          const invoiceId = data.replace('details_', '');
+          await this.sendInvoiceDetails(chatId, invoiceId, user.id);
+          await this.bot?.answerCallbackQuery(callbackQuery.id);
+
+        } else if (data.startsWith('status_')) {
+          const invoiceId = data.replace('status_', '');
+          await this.sendStatusChangeOptions(chatId, invoiceId, user.id);
+          await this.bot?.answerCallbackQuery(callbackQuery.id);
+
+        } else if (data.startsWith('copy_')) {
+          const invoiceId = data.replace('copy_', '');
+          await this.copyInvoice(chatId, invoiceId, user.id);
+          await this.bot?.answerCallbackQuery(callbackQuery.id, {
+            text: "Счет скопирован!"
+          });
+
+        } else if (data.startsWith('set_status_')) {
+          const [, status, invoiceId] = data.split('_');
+          await this.changeInvoiceStatus(chatId, invoiceId, status, user.id);
+          await this.bot?.answerCallbackQuery(callbackQuery.id, {
+            text: "Статус изменен!"
+          });
         }
 
       } catch (error) {
@@ -399,6 +448,295 @@ ${invoice.totalAmountWords}
         "❌ Ошибка при генерации Excel файла.\n\n" +
         "Попробуйте использовать веб-платформу для скачивания файла."
       );
+    }
+  }
+
+  // Новые методы для расширенной функциональности
+
+  private async handleSearchCommand(msg: any, query: string) {
+    const chatId = msg.chat.id;
+    const telegramId = msg.from?.id.toString();
+
+    if (!telegramId) return;
+
+    const user = await storage.getUserByTelegramId(telegramId);
+    if (!user) {
+      await this.bot?.sendMessage(chatId, "🔑 Пожалуйста, авторизуйтесь на веб-платформе");
+      return;
+    }
+
+    try {
+      const allInvoices = await storage.getInvoicesByUserId(user.id);
+      
+      // Поиск по номеру счета, названию поставщика или покупателя
+      const searchResults = [];
+      for (const basicInvoice of allInvoices) {
+        const invoice = await storage.getInvoiceById(basicInvoice.id);
+        if (!invoice) continue;
+
+        const searchText = query.toLowerCase();
+        if (
+          invoice.invoiceNumber.toLowerCase().includes(searchText) ||
+          invoice.supplier.name.toLowerCase().includes(searchText) ||
+          invoice.buyer.name.toLowerCase().includes(searchText) ||
+          invoice.items.some(item => item.name.toLowerCase().includes(searchText))
+        ) {
+          searchResults.push(invoice);
+        }
+      }
+
+      if (searchResults.length === 0) {
+        await this.bot?.sendMessage(chatId, `🔍 По запросу "${query}" ничего не найдено`);
+        return;
+      }
+
+      let message = `🔍 Результаты поиска по "${query}":\n\n`;
+      for (const invoice of searchResults.slice(0, 5)) {
+        message += `🧾 №${invoice.invoiceNumber}\n`;
+        message += `📅 ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n`;
+        message += `💰 ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n`;
+        message += `📊 ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}\n\n`;
+      }
+
+      if (searchResults.length > 5) {
+        message += `\n... и еще ${searchResults.length - 5} результатов`;
+      }
+
+      await this.bot?.sendMessage(chatId, message);
+
+    } catch (error) {
+      console.error('Error in search command:', error);
+      await this.bot?.sendMessage(chatId, "❌ Ошибка при поиске");
+    }
+  }
+
+  private async handleStatsCommand(msg: any) {
+    const chatId = msg.chat.id;
+    const telegramId = msg.from?.id.toString();
+
+    if (!telegramId) return;
+
+    const user = await storage.getUserByTelegramId(telegramId);
+    if (!user) {
+      await this.bot?.sendMessage(chatId, "🔑 Пожалуйста, авторизуйтесь на веб-платформе");
+      return;
+    }
+
+    try {
+      const allInvoices = await storage.getInvoicesByUserId(user.id);
+      
+      const stats = {
+        total: allInvoices.length,
+        draft: 0,
+        sent: 0,
+        paid: 0,
+        totalAmount: 0,
+        thisMonth: 0,
+        thisMonthAmount: 0
+      };
+
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+
+      for (const invoice of allInvoices) {
+        const status = invoice.status || 'draft';
+        stats[status as keyof typeof stats]++;
+        stats.totalAmount += Number(invoice.totalAmount);
+
+        const invoiceDate = new Date(invoice.invoiceDate);
+        if (invoiceDate.getMonth() === currentMonth && invoiceDate.getFullYear() === currentYear) {
+          stats.thisMonth++;
+          stats.thisMonthAmount += Number(invoice.totalAmount);
+        }
+      }
+
+      const message = `📊 <b>Статистика по счетам</b>\n\n` +
+        `📋 Всего счетов: ${stats.total}\n` +
+        `📝 Черновиков: ${stats.draft}\n` +
+        `📤 Отправлено: ${stats.sent}\n` +
+        `✅ Оплачено: ${stats.paid}\n\n` +
+        `💰 <b>Финансы:</b>\n` +
+        `💵 Общая сумма: ${stats.totalAmount.toLocaleString('ru-RU')} ₸\n` +
+        `📅 За этот месяц: ${stats.thisMonth} счетов на ${stats.thisMonthAmount.toLocaleString('ru-RU')} ₸`;
+
+      await this.bot?.sendMessage(chatId, message, { parse_mode: 'HTML' });
+
+    } catch (error) {
+      console.error('Error in stats command:', error);
+      await this.bot?.sendMessage(chatId, "❌ Ошибка при получении статистики");
+    }
+  }
+
+  private async handleSettingsCommand(msg: any) {
+    const chatId = msg.chat.id;
+    await this.bot?.sendMessage(chatId, 
+      `⚙️ <b>Настройки уведомлений</b>\n\n` +
+      `В будущих обновлениях здесь будут доступны:\n` +
+      `• Автоматические уведомления при создании счета\n` +
+      `• Напоминания о неоплаченных счетах\n` +
+      `• Настройки частоты уведомлений\n\n` +
+      `Пока что все уведомления включены по умолчанию.`,
+      { parse_mode: 'HTML' }
+    );
+  }
+
+  private async sendInvoiceDetails(chatId: number, invoiceId: string, userId: string) {
+    try {
+      const invoice = await storage.getInvoiceById(invoiceId);
+      if (!invoice || invoice.userId !== userId) {
+        await this.bot?.sendMessage(chatId, "❌ Счет не найден");
+        return;
+      }
+
+      const message = `📋 <b>Детали счета №${invoice.invoiceNumber}</b>\n\n` +
+        `📅 Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n` +
+        `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}\n` +
+        `📄 Договор: ${invoice.contract || 'Без договора'}\n\n` +
+        `<b>🏢 Поставщик:</b>\n` +
+        `Название: ${invoice.supplier.name}\n` +
+        `БИН/ИИН: ${invoice.supplier.bin}\n` +
+        `ИИК: ${invoice.supplier.iik}\n` +
+        `БИК: ${invoice.supplier.bik}\n` +
+        `Банк: ${invoice.supplier.bank}\n\n` +
+        `<b>🏪 Покупатель:</b>\n` +
+        `Название: ${invoice.buyer.name}\n` +
+        `БИН/ИИН: ${invoice.buyer.bin}\n` +
+        `Адрес: ${invoice.buyer.address}\n\n` +
+        `<b>📦 Товары/услуги:</b>\n` +
+        invoice.items.map((item, index) => 
+          `${index + 1}. ${item.name}\n   ${item.quantity} ${item.unit} × ${item.price} ₸ = ${item.total} ₸`
+        ).join('\n') + 
+        `\n\n💰 <b>Итого: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸</b>\n` +
+        `${invoice.totalAmountWords}`;
+
+      await this.bot?.sendMessage(chatId, message, { parse_mode: 'HTML' });
+
+    } catch (error) {
+      console.error('Error sending invoice details:', error);
+      await this.bot?.sendMessage(chatId, "❌ Ошибка при получении деталей счета");
+    }
+  }
+
+  private async sendStatusChangeOptions(chatId: number, invoiceId: string, userId: string) {
+    try {
+      const invoice = await storage.getInvoiceById(invoiceId);
+      if (!invoice || invoice.userId !== userId) {
+        await this.bot?.sendMessage(chatId, "❌ Счет не найден");
+        return;
+      }
+
+      const currentStatus = invoice.status || 'draft';
+      const message = `📊 Изменить статус счета №${invoice.invoiceNumber}\n\n` +
+        `Текущий статус: ${this.getStatusEmoji(currentStatus)} ${this.getStatusText(currentStatus)}`;
+
+      await this.bot?.sendMessage(chatId, message, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '📝 Черновик', callback_data: `set_status_draft_${invoiceId}` },
+              { text: '📤 Отправлен', callback_data: `set_status_sent_${invoiceId}` }
+            ],
+            [
+              { text: '✅ Оплачен', callback_data: `set_status_paid_${invoiceId}` }
+            ]
+          ]
+        }
+      });
+
+    } catch (error) {
+      console.error('Error sending status options:', error);
+      await this.bot?.sendMessage(chatId, "❌ Ошибка при получении статуса счета");
+    }
+  }
+
+  private async changeInvoiceStatus(chatId: number, invoiceId: string, newStatus: string, userId: string) {
+    try {
+      const invoice = await storage.getInvoiceById(invoiceId);
+      if (!invoice || invoice.userId !== userId) {
+        await this.bot?.sendMessage(chatId, "❌ Счет не найден");
+        return;
+      }
+
+      // Обновляем статус счета
+      await storage.updateInvoice(invoiceId, { status: newStatus });
+
+      const message = `✅ Статус счета №${invoice.invoiceNumber} изменен на:\n` +
+        `${this.getStatusEmoji(newStatus)} ${this.getStatusText(newStatus)}`;
+
+      await this.bot?.sendMessage(chatId, message);
+
+      // Отправляем уведомление о смене статуса
+      if (newStatus === 'paid') {
+        await this.bot?.sendMessage(chatId, 
+          `🎉 Поздравляем! Счет №${invoice.invoiceNumber} помечен как оплаченный!`
+        );
+      }
+
+    } catch (error) {
+      console.error('Error changing invoice status:', error);
+      await this.bot?.sendMessage(chatId, "❌ Ошибка при изменении статуса");
+    }
+  }
+
+  private async copyInvoice(chatId: number, invoiceId: string, userId: string) {
+    try {
+      const response = await fetch(`http://localhost:5000/api/invoices/${invoiceId}/copy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Request': 'true'
+        },
+        body: JSON.stringify({ userId })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to copy invoice');
+      }
+
+      const newInvoice = await response.json();
+
+      await this.bot?.sendMessage(chatId, 
+        `📋 Счет скопирован!\n\n` +
+        `Новый номер: ${newInvoice.invoiceNumber}\n` +
+        `Оригинальный счет остался без изменений.\n\n` +
+        `Отредактируйте новый счет на веб-платформе при необходимости.`
+      );
+
+    } catch (error) {
+      console.error('Error copying invoice:', error);
+      await this.bot?.sendMessage(chatId, "❌ Ошибка при копировании счета");
+    }
+  }
+
+  // Метод для автоматических уведомлений (вызывается при создании нового счета)
+  async notifyInvoiceCreated(telegramId: string, invoice: any) {
+    if (!this.bot) return;
+
+    try {
+      const message = `🆕 <b>Новый счет создан!</b>\n\n` +
+        `📄 Номер: ${invoice.invoiceNumber}\n` +
+        `📅 Дата: ${new Date(invoice.invoiceDate).toLocaleDateString('ru-RU')}\n` +
+        `💰 Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n` +
+        `🏢 Поставщик: ${invoice.supplier?.name || 'Не указан'}\n` +
+        `🏪 Покупатель: ${invoice.buyer?.name || 'Не указан'}`;
+
+      await this.bot.sendMessage(telegramId, message, {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '📄 Скачать PDF', callback_data: `download_pdf_${invoice.id}` },
+              { text: '📊 Скачать Excel', callback_data: `download_excel_${invoice.id}` }
+            ],
+            [
+              { text: '🔗 Открыть на сайте', url: `${process.env.FRONTEND_URL}/invoice/${invoice.id}` }
+            ]
+          ]
+        }
+      });
+
+    } catch (error) {
+      console.error('Error sending invoice creation notification:', error);
     }
   }
 }

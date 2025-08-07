@@ -279,6 +279,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return invoice with full details
       const fullInvoice = await storage.getInvoiceById(invoice.id);
+      
+      // Send Telegram notification for new invoice
+      if (telegramBot) {
+        try {
+          const user = await storage.getUserById(req.session.userId);
+          if (user?.telegramId) {
+            await telegramBot.notifyInvoiceCreated(user.telegramId, fullInvoice);
+          }
+        } catch (telegramError) {
+          console.error('Failed to send Telegram notification:', telegramError);
+          // Don't fail the invoice creation if notification fails
+        }
+      }
+      
       res.json(fullInvoice);
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -49,15 +49,19 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Features
 - **Invoice Management**: Create, edit, copy, and manage invoice data with automatic calculations
-- **Search and Filtering**: Real-time search by invoice number, buyer, supplier with status filters
-- **Document Export**: Generate PDF and Excel formats with customizable layouts and validation
+- **Advanced Telegram Bot**: Enhanced bot with search, statistics, status management, and interactive buttons
+- **Status Workflow**: Draft → Sent → Paid status management with automatic notifications
+- **Smart Search**: Bot commands for searching invoices by number, supplier, buyer, or item names
+- **Comprehensive Statistics**: Real-time analytics on invoice counts, amounts, and monthly summaries
+- **Interactive Controls**: Inline buttons for PDF/Excel downloads, status changes, and invoice copying
+- **Document Export**: Generate PDF and Excel formats with Kazakhstan-compliant payment table layouts
 - **Service Templates**: Predefined templates for different business types (IT, design, marketing, etc.)
-- **Telegram Integration**: Bot notifications and authentication through Telegram
+- **Telegram Integration**: Full bot notifications, authentication, and document delivery through Telegram
 - **Multi-language Support**: Kazakh and Russian language support for amount conversion
 - **Secure File Management**: Object storage integration with file type and size validation
 - **Data Persistence**: Save supplier and buyer information for reuse with copy functionality
 - **Comprehensive Validation**: Real-time validation of BIN/IIN, IIK, BIK, and required fields
-- **Compliance**: Meets Kazakhstan legislation requirements for official invoices
+- **Compliance**: Meets Kazakhstan legislation requirements with exact payment table formatting
 
 ### Development Tools
 - **Build System**: Vite with React plugin and development server
