@@ -569,6 +569,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Internal PDF generation endpoint for Telegram bot
+  app.post("/api/invoices/:id/pdf", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const isInternalRequest = req.headers['x-internal-request'] === 'true';
+      
+      if (!isInternalRequest && !req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const requestUserId = isInternalRequest ? userId : req.session.userId;
+      
+      const invoice = await storage.getInvoiceById(req.params.id);
+      if (!invoice || invoice.userId !== requestUserId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Generate simple PDF using jsPDF
+      const jsPDF = (await import('jspdf')).default;
+      
+      const pdf = new jsPDF();
+      pdf.text(`Счет на оплату №${invoice.invoiceNumber}`, 20, 20);
+      pdf.text(`Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}`, 20, 30);
+      pdf.text(`Поставщик: ${invoice.supplier?.name || 'Неизвестно'}`, 20, 40);
+      pdf.text(`Покупатель: ${invoice.buyer?.name || 'Неизвестно'}`, 20, 50);
+      pdf.text(`Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸`, 20, 60);
+      
+      // Add services
+      let yPos = 80;
+      pdf.text('Услуги:', 20, yPos);
+      yPos += 10;
+      
+      invoice.items?.forEach((item, index) => {
+        pdf.text(`${index + 1}. ${item.name} - ${item.quantity} ${item.unit} × ${item.price} = ${item.total} ₸`, 20, yPos);
+        yPos += 10;
+      });
+      
+      const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
+  // Internal Excel generation endpoint for Telegram bot
+  app.post("/api/invoices/:id/excel", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const isInternalRequest = req.headers['x-internal-request'] === 'true';
+      
+      if (!isInternalRequest && !req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const requestUserId = isInternalRequest ? userId : req.session.userId;
+      
+      const invoice = await storage.getInvoiceById(req.params.id);
+      if (!invoice || invoice.userId !== requestUserId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Generate simple Excel using XLSX
+      const XLSX = await import('xlsx');
+      
+      const workbook = XLSX.utils.book_new();
+      const worksheetData = [
+        ['Номер счета', invoice.invoiceNumber],
+        ['Дата', invoice.invoiceDate.toLocaleDateString('ru-RU')],
+        ['Поставщик', invoice.supplier?.name || 'Неизвестно'],
+        ['Покупатель', invoice.buyer?.name || 'Неизвестно'],
+        [''],
+        ['Услуги:'],
+        ['№', 'Наименование', 'Количество', 'Единица', 'Цена', 'Сумма']
+      ];
+      
+      invoice.items?.forEach((item, index) => {
+        worksheetData.push([
+          index + 1,
+          item.name,
+          item.quantity,
+          item.unit,
+          item.price,
+          item.total
+        ]);
+      });
+      
+      worksheetData.push(['', '', '', '', 'Итого:', invoice.totalAmount]);
+      
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Счет');
+      
+      const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Length', excelBuffer.length);
+      res.send(excelBuffer);
+      
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      res.status(500).json({ message: "Failed to generate Excel" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

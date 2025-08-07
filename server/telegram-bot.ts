@@ -323,13 +323,16 @@ ${invoice.totalAmountWords}
         return;
       }
 
-      // Generate PDF through internal API call
+      // Generate PDF using internal API call (properly authenticated)
       const response = await fetch(`http://localhost:5000/api/invoices/${invoiceId}/pdf`, {
+        method: 'POST',
         headers: {
-          'Cookie': `connect.sid=${userId}` // Simplified auth for internal call
-        }
+          'Content-Type': 'application/json',
+          'X-Internal-Request': 'true'
+        },
+        body: JSON.stringify({ userId })
       });
-
+      
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
       }
@@ -365,13 +368,16 @@ ${invoice.totalAmountWords}
         return;
       }
 
-      // Generate Excel through internal API call
+      // Generate Excel using internal API call (properly authenticated)
       const response = await fetch(`http://localhost:5000/api/invoices/${invoiceId}/excel`, {
+        method: 'POST',
         headers: {
-          'Cookie': `connect.sid=${userId}` // Simplified auth for internal call
-        }
+          'Content-Type': 'application/json',
+          'X-Internal-Request': 'true'
+        },
+        body: JSON.stringify({ userId })
       });
-
+      
       if (!response.ok) {
         throw new Error('Failed to generate Excel');
       }
