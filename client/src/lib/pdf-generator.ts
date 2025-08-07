@@ -81,13 +81,13 @@ export class PDFGenerator {
       totalWidth: 190,
       rowHeight: 8,
       cols: [
-        { width: 13, align: 'center' },   // № - 7%
-        { width: 23, align: 'center' },   // Код - 12%
-        { width: 78, align: 'left' },     // Наименование - 41%
-        { width: 21, align: 'center' },   // Кол-во - 11%
-        { width: 23, align: 'center' },   // Ед. - 12%
+        { width: 12, align: 'center' },   // № - 6%
+        { width: 20, align: 'center' },   // Код - 11%
+        { width: 75, align: 'left' },     // Наименование - 39%
+        { width: 18, align: 'center' },   // Кол-во - 9%
+        { width: 20, align: 'center' },   // Ед. - 11%
         { width: 32, align: 'right' },    // Цена - 17%
-        { width: 32, align: 'right' }     // Сумма - 17% (ВАЖНО!)
+        { width: 33, align: 'right' }     // Сумма - 17%
       ]
     },
 
