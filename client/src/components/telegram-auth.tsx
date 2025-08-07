@@ -50,24 +50,55 @@ export default function TelegramAuth({ onSuccess }: TelegramAuthProps) {
     };
 
     // Load Telegram Widget script with correct domain
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    const botUsername = 'invoicekzbot';
-    script.setAttribute('data-telegram-login', botUsername);
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-onauth', 'TelegramLoginWidget.dataOnauth(user)');
-    script.setAttribute('data-request-access', 'write');
-    script.setAttribute('data-auth-url', window.location.origin + '/api/auth/telegram');
-    script.async = true;
+    const loadTelegramWidget = async () => {
+      try {
+        const response = await fetch('/api/telegram/bot-info');
+        const data = await response.json();
+        const botUsername = data.botUsername || 'invoicekzbot';
+        
+        const script = document.createElement('script');
+        script.src = 'https://telegram.org/js/telegram-widget.js?22';
+        script.setAttribute('data-telegram-login', botUsername);
+        script.setAttribute('data-size', 'large');
+        script.setAttribute('data-onauth', 'TelegramLoginWidget.dataOnauth(user)');
+        script.setAttribute('data-request-access', 'write');
+        script.setAttribute('data-auth-url', window.location.origin + '/api/auth/telegram');
+        script.async = true;
 
-    const container = document.getElementById('telegram-login-container');
-    if (container) {
-      container.appendChild(script);
-    }
+        const container = document.getElementById('telegram-login-container');
+        if (container) {
+          container.appendChild(script);
+        }
+      } catch (error) {
+        console.error('Failed to load bot info, using fallback:', error);
+        const script = document.createElement('script');
+        script.src = 'https://telegram.org/js/telegram-widget.js?22';
+        script.setAttribute('data-telegram-login', 'invoicekzbot');
+        script.setAttribute('data-size', 'large');
+        script.setAttribute('data-onauth', 'TelegramLoginWidget.dataOnauth(user)');
+        script.setAttribute('data-request-access', 'write');
+        script.setAttribute('data-auth-url', window.location.origin + '/api/auth/telegram');
+        script.async = true;
+
+        const container = document.getElementById('telegram-login-container');
+        if (container) {
+          container.appendChild(script);
+        }
+      }
+    };
+
+    loadTelegramWidget();
 
     return () => {
-      if (container && script.parentNode) {
-        container.removeChild(script);
+      const container = document.getElementById('telegram-login-container');
+      if (container) {
+        // Remove all script children
+        const scripts = container.querySelectorAll('script');
+        scripts.forEach(script => {
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        });
       }
     };
   }, [authMutation]);

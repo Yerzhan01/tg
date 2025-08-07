@@ -800,48 +800,45 @@ ${invoice.totalAmountWords}
         return;
       }
 
-      if (basicInvoices.length <= 5) {
-        for (const basicInvoice of basicInvoices) {
-          const invoice = await storage.getInvoiceById(basicInvoice.id);
-          if (!invoice) continue;
+      // Всегда показываем кнопки для удобства пользователя
+      const invoicesToShow = basicInvoices.slice(0, 10); // Показываем максимум 10 счетов с кнопками
+      
+      for (const basicInvoice of invoicesToShow) {
+        const invoice = await storage.getInvoiceById(basicInvoice.id);
+        if (!invoice) continue;
 
-          const message = `🧾 Счет №${invoice.invoiceNumber}\n` +
-                         `📅 Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n` +
-                         `💰 Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n` +
-                         `🏢 Поставщик: ${invoice.supplier.name}\n` +
-                         `🏪 Покупатель: ${invoice.buyer.name}\n` +
-                         `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}`;
+        const message = `🧾 <b>Счет №${invoice.invoiceNumber}</b>\n` +
+                       `📅 Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n` +
+                       `💰 Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n` +
+                       `🏢 Поставщик: ${invoice.supplier.name}\n` +
+                       `🏪 Покупатель: ${invoice.buyer.name}\n` +
+                       `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}`;
 
-          await this.bot?.sendMessage(chatId, message, {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: '📄 PDF', callback_data: `download_pdf_${invoice.id}` },
-                  { text: '📊 Excel', callback_data: `download_excel_${invoice.id}` }
-                ],
-                [
-                  { text: '📋 Детали', callback_data: `details_${invoice.id}` },
-                  { text: '📊 Статус', callback_data: `status_${invoice.id}` },
-                  { text: '📝 Копировать', callback_data: `copy_${invoice.id}` }
-                ]
+        await this.bot?.sendMessage(chatId, message, {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '📄 PDF', callback_data: `download_pdf_${invoice.id}` },
+                { text: '📊 Excel', callback_data: `download_excel_${invoice.id}` }
+              ],
+              [
+                { text: '📋 Детали', callback_data: `details_${invoice.id}` },
+                { text: '📊 Статус', callback_data: `status_${invoice.id}` },
+                { text: '📝 Копировать', callback_data: `copy_${invoice.id}` }
               ]
-            }
-          });
-        }
-      } else {
-        let message = "📋 Ваши счета:\n\n";
-        for (const invoice of basicInvoices.slice(0, 10)) {
-          message += `🧾 №${invoice.invoiceNumber} от ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n`;
-          message += `💰 Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n`;
-          message += `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}\n\n`;
-        }
+            ]
+          }
+        });
+      }
 
-        if (basicInvoices.length > 10) {
-          message += `\n... и еще ${basicInvoices.length - 10} счетов\n`;
-          message += `Для скачивания файлов используйте веб-платформу`;
-        }
-
-        await this.bot?.sendMessage(chatId, message);
+      // Если счетов больше 10, сообщаем об этом
+      if (basicInvoices.length > 10) {
+        await this.bot?.sendMessage(chatId, 
+          `📋 Показано ${invoicesToShow.length} из ${basicInvoices.length} счетов.\n\n` +
+          `Для просмотра всех счетов используйте поиск:\n` +
+          `/search <номер счета или название>`
+        );
       }
     } catch (error) {
       console.error('Error showing invoices list:', error);
