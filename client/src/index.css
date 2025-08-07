@@ -78,6 +78,43 @@
   .btn-success {
     @apply bg-green-600 text-white hover:bg-green-700 transition-colors;
   }
+
+  /* Мобильная адаптация */
+  .mobile-container {
+    @apply px-4 py-2 max-w-full overflow-x-hidden;
+  }
+  
+  .mobile-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  .mobile-button {
+    @apply w-full min-h-[44px] text-sm px-4 py-2 touch-manipulation;
+  }
+  
+  .mobile-input {
+    @apply w-full min-h-[44px] text-base px-3 py-2;
+  }
+  
+  .mobile-card {
+    @apply rounded-lg shadow-sm border border-border p-4 mb-4;
+  }
+  
+  .mobile-navigation {
+    @apply flex flex-wrap gap-2 justify-center sm:justify-start;
+  }
+  
+  .mobile-table {
+    @apply w-full overflow-x-auto;
+  }
+  
+  .mobile-table table {
+    @apply min-w-full text-sm;
+  }
+  
+  .mobile-scroll {
+    @apply overflow-x-auto -mx-4 px-4;
+  }
 }
 
 @media print {

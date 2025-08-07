@@ -650,37 +650,40 @@ export default function InvoiceGenerator() {
   );
 
   const renderEditMode = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Создание счета на оплату</CardTitle>
-        <p className="text-gray-600">Заполните данные для генерации официального счета</p>
+    <Card className="mobile-card">
+      <CardHeader className="pb-4 sm:pb-6">
+        <CardTitle className="text-base sm:text-lg">Создание счета на оплату</CardTitle>
+        <p className="text-sm text-gray-600">Заполните данные для генерации официального счета</p>
       </CardHeader>
-      <CardContent className="space-y-8">
+      <CardContent className="space-y-4 sm:space-y-8">
         {/* Invoice Header */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mobile-grid gap-4 sm:gap-6">
           <div>
-            <Label htmlFor="invoiceNumber">Номер счета *</Label>
+            <Label htmlFor="invoiceNumber" className="text-sm font-medium">Номер счета *</Label>
             <Input
               id="invoiceNumber"
               value={invoiceData.invoiceNumber}
               onChange={(e) => updateField('invoiceNumber', '', e.target.value)}
+              className="mobile-input"
             />
           </div>
           <div>
-            <Label htmlFor="invoiceDate">Дата счета *</Label>
+            <Label htmlFor="invoiceDate" className="text-sm font-medium">Дата счета *</Label>
             <Input
               id="invoiceDate"
               type="date"
               value={invoiceData.invoiceDate}
               onChange={(e) => updateField('invoiceDate', '', e.target.value)}
+              className="mobile-input"
             />
           </div>
           <div>
-            <Label htmlFor="contract">Договор</Label>
+            <Label htmlFor="contract" className="text-sm font-medium">Договор</Label>
             <Input
               id="contract"
               value={invoiceData.contract}
               onChange={(e) => updateField('contract', '', e.target.value)}
+              className="mobile-input"
             />
           </div>
         </div>
@@ -728,18 +731,18 @@ export default function InvoiceGenerator() {
 
         {/* Services/Products */}
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 sm:gap-0">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Товары и услуги
             </h3>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowTemplates(true)} variant="outline">
-                <Layers className="w-4 h-4 mr-2" />
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button onClick={() => setShowTemplates(true)} variant="outline" className="mobile-button sm:w-auto text-xs sm:text-sm">
+                <Layers className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 Шаблоны
               </Button>
-              <Button onClick={addService} className="btn-primary">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={addService} className="mobile-button sm:w-auto btn-primary text-xs sm:text-sm">
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 Добавить
               </Button>
             </div>
@@ -1306,32 +1309,35 @@ export default function InvoiceGenerator() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 no-print">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-white" />
+        <div className="mobile-container max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-center py-3 sm:py-4 gap-3 sm:gap-4 h-auto sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center">
+                <FileText className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Генератор счетов РК</h1>
-                <p className="text-sm text-gray-500">Telegram интеграция</p>
+              <div className="text-center sm:text-left">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">Генератор счетов РК</h1>
+                <p className="text-xs sm:text-sm text-gray-500">Telegram интеграция</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto justify-center sm:justify-end">
               <Button
                 variant="outline"
                 onClick={() => window.location.href = '/invoices'}
+                className="mobile-button sm:w-auto text-xs sm:text-sm"
               >
-                <List className="w-5 h-5 mr-2" />
-                Мои счета
+                <List className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Мои счета</span>
+                <span className="sm:hidden">Счета</span>
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
+                className="mobile-button sm:w-auto"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-3 h-3 sm:w-5 sm:h-5" />
               </Button>
             </div>
           </div>
@@ -1339,30 +1345,30 @@ export default function InvoiceGenerator() {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="mobile-container max-w-7xl mx-auto py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-8">
           
           {/* Sidebar */}
           <div className="lg:col-span-1 no-print">
-            <Card>
-              <CardHeader>
-                <CardTitle>Управление</CardTitle>
+            <Card className="mobile-card">
+              <CardHeader className="pb-2 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Управление</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {renderModeButtons()}
                 
-                <div className="p-4 border-t border-gray-200">
-                  <div className="bg-blue-50 rounded-lg p-4">
+                <div className="p-3 sm:p-4 border-t border-gray-200">
+                  <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
                     <div className="flex items-center space-x-2 mb-2">
-                      <Bot className="w-5 h-5 text-primary" />
-                      <span className="text-sm font-medium text-primary">Telegram Bot</span>
+                      <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                      <span className="text-xs sm:text-sm font-medium text-primary">Telegram Bot</span>
                     </div>
                     <p className="text-xs text-blue-700 mb-3">
                       Генерируйте счета прямо из Telegram и получайте готовые файлы
                     </p>
                     <Button
                       onClick={() => setShowTelegramBotModal(true)}
-                      className="w-full btn-primary text-sm py-2"
+                      className="mobile-button btn-primary text-xs sm:text-sm py-2"
                     >
                       Открыть бот
                     </Button>
@@ -1384,44 +1390,44 @@ export default function InvoiceGenerator() {
 
       {/* Telegram Bot Modal */}
       {showTelegramBotModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full mx-4">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bot className="w-8 h-8 text-white" />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="text-center mb-4 sm:mb-6">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Telegram Bot</h2>
-              <p className="text-gray-600">Генерируйте счета прямо из Telegram</p>
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">Telegram Bot</h2>
+              <p className="text-sm sm:text-base text-gray-600">Генерируйте счета прямо из Telegram</p>
             </div>
             
-            <div className="bg-blue-50 rounded-lg p-6 mb-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Возможности бота:</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
+            <div className="bg-blue-50 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3">Возможности бота:</h3>
+              <ul className="space-y-2 text-xs sm:text-sm text-gray-700">
                 <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-success" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-success flex-shrink-0" />
                   <span>Создание счетов из Telegram</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-success" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-success flex-shrink-0" />
                   <span>Получение готовых PDF и Excel файлов</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-success" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-success flex-shrink-0" />
                   <span>Прямые ссылки на документы</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-success" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-success flex-shrink-0" />
                   <span>Синхронизация с веб-платформой</span>
                 </li>
               </ul>
             </div>
             
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
               <Button
                 onClick={() => window.open(`https://t.me/${process.env.VITE_TELEGRAM_BOT_USERNAME || 'your_invoice_bot'}`, '_blank')}
-                className="flex-1 btn-primary"
+                className="mobile-button sm:flex-1 btn-primary text-sm"
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
+                <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 Открыть бот
               </Button>
               <Button
