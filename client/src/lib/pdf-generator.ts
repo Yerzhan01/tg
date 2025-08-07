@@ -310,8 +310,8 @@ export class PDFGenerator {
       pdf.line(currentX, ST.startY, currentX, ST.startY + tableHeight);
     });
 
-    // 3. Рисуем горизонтальные линии (но НЕ в строке итого)
-    for (let i = 1; i < rowCount - 1; i++) { // -1 чтобы не рисовать линию перед строкой "Итого"
+    // 3. Рисуем горизонтальные линии
+    for (let i = 1; i < rowCount; i++) {
       pdf.line(ST.startX, ST.startY + (ST.rowHeight * i), 
                ST.startX + ST.totalWidth, ST.startY + (ST.rowHeight * i));
     }
