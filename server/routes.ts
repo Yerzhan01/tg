@@ -6,6 +6,7 @@ import { z } from "zod";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
+import crypto from "crypto";
 import { telegramBot } from "./telegram-bot";
 
 const upload = multer({ 
@@ -21,6 +22,29 @@ const upload = multer({
   }
 });
 
+// Telegram data validation function
+function validateTelegramData(telegramData: any, botToken: string): boolean {
+  if (!telegramData.hash) return false;
+  
+  const { hash, ...dataToCheck } = telegramData;
+  
+  // Create data string for verification
+  const dataCheckString = Object.keys(dataToCheck)
+    .sort()
+    .map(key => `${key}=${dataToCheck[key]}`)
+    .join('\n');
+  
+  // Generate secret key from bot token
+  const secretKey = crypto.createHash('sha256').update(botToken).digest();
+  
+  // Generate hash
+  const computedHash = crypto.createHmac('sha256', secretKey)
+    .update(dataCheckString)
+    .digest('hex');
+  
+  return computedHash === hash;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Telegram Authentication
@@ -28,9 +52,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const telegramData = req.body;
       
-      // Validate Telegram auth data (in production, verify hash)
+      // Validate required fields
       if (!telegramData.id || !telegramData.first_name) {
         return res.status(400).json({ message: "Invalid Telegram data" });
+      }
+
+      // Validate Telegram auth hash for security
+      if (!validateTelegramData(telegramData, process.env.TELEGRAM_BOT_TOKEN || '')) {
+        return res.status(400).json({ message: "Invalid Telegram authentication" });
       }
 
       let user = await storage.getUserByTelegramId(telegramData.id.toString());
@@ -477,15 +506,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
-      // Create new invoice based on original
-      const newInvoiceData = {
-        ...originalInvoice,
+      // Create new invoice based on original  
+      const newInvoiceData = insertInvoiceSchema.parse({
+        userId: req.session.userId,
         invoiceNumber: `${originalInvoice.invoiceNumber}-копия-${Date.now()}`,
-        invoiceDate: new Date().toISOString(),
-        status: 'draft' as const
-      };
+        invoiceDate: originalInvoice.invoiceDate,
+        contract: originalInvoice.contract,
+        supplierId: originalInvoice.supplierId,
+        buyerId: originalInvoice.buyerId,
+        totalAmount: originalInvoice.totalAmount,
+        totalAmountWords: originalInvoice.totalAmountWords,
+        status: 'draft'
+      });
 
-      const newInvoice = await storage.createInvoice(req.session.userId, newInvoiceData);
+      const newInvoice = await storage.createInvoice(newInvoiceData);
+      
+      // Copy items
+      for (const item of originalInvoice.items) {
+        await storage.createInvoiceItem({
+          invoiceId: newInvoice.id,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          price: item.price,
+          total: item.total
+        });
+      }
+
       res.json(newInvoice);
     } catch (error) {
       console.error('Failed to copy invoice:', error);

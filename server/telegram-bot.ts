@@ -1,6 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { storage } from './storage';
 import { InvoiceWithDetails } from '@shared/schema';
+import crypto from 'crypto';
 
 class InvoiceTelegramBot {
   private bot: TelegramBot | null = null;
@@ -18,7 +19,12 @@ class InvoiceTelegramBot {
     if (!this.bot) return;
     
     try {
-      const webhookUrl = `${process.env.REPLIT_DEV_DOMAIN || 'https://bc700157-2325-4ed8-89d2-b630caa0879c-00-358a4svxmccgk.picard.replit.dev'}/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
+      // Динамически определяем домен
+      const domain = process.env.REPLIT_DEV_DOMAIN || 
+                    process.env.REPLIT_DOMAIN || 
+                    `${process.env.REPL_SLUG}--${process.env.REPL_OWNER}.replit.app`;
+      
+      const webhookUrl = `https://${domain}/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
       await this.bot.setWebHook(webhookUrl);
       console.log('Telegram webhook set to:', webhookUrl);
     } catch (error) {
@@ -93,9 +99,10 @@ class InvoiceTelegramBot {
         for (const invoice of invoices) {
           const message = `🧾 Счет №${invoice.invoiceNumber}\n` +
                          `📅 Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n` +
-                         `💰 Сумма: ${invoice.totalAmount} ₸\n` +
-                         `🏢 Поставщик: Данные из веб-платформы\n` +
-                         `🏪 Покупатель: Данные из веб-платформы`;
+                         `💰 Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n` +
+                         `🏢 Поставщик: ${invoice.supplier.name}\n` +
+                         `🏪 Покупатель: ${invoice.buyer.name}\n` +
+                         `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}`;
 
           await this.bot?.sendMessage(chatId, message, {
             reply_markup: {
@@ -113,7 +120,7 @@ class InvoiceTelegramBot {
         let message = "📋 Ваши счета:\n\n";
         for (const invoice of invoices.slice(0, 10)) {
           message += `🧾 №${invoice.invoiceNumber} от ${invoice.invoiceDate.toLocaleDateString('ru-RU')}\n`;
-          message += `💰 Сумма: ${invoice.totalAmount} ₸\n`;
+          message += `💰 Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸\n`;
           message += `📊 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}\n\n`;
         }
 
@@ -179,13 +186,7 @@ class InvoiceTelegramBot {
             text: "Генерируем PDF файл..."
           });
           
-          await this.bot?.sendMessage(chatId, "⏳ Генерация PDF файла, пожалуйста подождите...");
-          
-          // For now, send a message that PDF generation will be implemented
-          await this.bot?.sendMessage(chatId, 
-            "📄 PDF файл будет отправлен через веб-платформу.\n\n" +
-            "Используйте кнопку 'Отправить в Telegram' на веб-сайте для получения готового PDF файла."
-          );
+          await this.sendPDFFile(chatId, invoiceId, user.id);
 
         } else if (data.startsWith('download_excel_')) {
           const invoiceId = data.replace('download_excel_', '');
@@ -193,13 +194,7 @@ class InvoiceTelegramBot {
             text: "Генерируем Excel файл..."
           });
           
-          await this.bot?.sendMessage(chatId, "⏳ Генерация Excel файла, пожалуйста подождите...");
-          
-          // For now, send a message that Excel generation will be implemented
-          await this.bot?.sendMessage(chatId, 
-            "📊 Excel файл будет отправлен через веб-платформу.\n\n" +
-            "Используйте функцию экспорта на веб-сайте для получения готового Excel файла."
-          );
+          await this.sendExcelFile(chatId, invoiceId, user.id);
         }
 
       } catch (error) {
@@ -287,7 +282,7 @@ ${invoice.items.map((item, index) =>
   `${index + 1}. ${item.name}\n   ${item.quantity} ${item.unit} × ${item.price} ₸ = ${item.total} ₸`
 ).join('\n')}
 
-💰 <b>Итого: ${invoice.totalAmount} ₸</b>
+💰 <b>Итого: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸</b>
 ${invoice.totalAmountWords}
 
 📋 Статус: ${this.getStatusEmoji(invoice.status || 'draft')} ${this.getStatusText(invoice.status || 'draft')}
@@ -309,6 +304,90 @@ ${invoice.totalAmountWords}
       case 'sent': return 'Отправлен';
       case 'paid': return 'Оплачен';
       default: return 'Неизвестен';
+    }
+  }
+
+  private async sendPDFFile(chatId: number, invoiceId: string, userId: string) {
+    try {
+      await this.bot?.sendMessage(chatId, "⏳ Генерация PDF файла...");
+      
+      // Get invoice data
+      const invoice = await storage.getInvoiceById(invoiceId);
+      if (!invoice || invoice.userId !== userId) {
+        await this.bot?.sendMessage(chatId, "❌ Счет не найден или у вас нет доступа к нему");
+        return;
+      }
+
+      // Generate PDF through internal API call
+      const response = await fetch(`http://localhost:5000/api/invoices/${invoiceId}/pdf`, {
+        headers: {
+          'Cookie': `connect.sid=${userId}` // Simplified auth for internal call
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const pdfBuffer = Buffer.from(await response.arrayBuffer());
+      
+      const filename = `Счет_${invoice.invoiceNumber}_${new Date().toISOString().slice(0,10)}.pdf`;
+      
+      await this.bot?.sendDocument(chatId, pdfBuffer, {
+        caption: `📄 Счет №${invoice.invoiceNumber} от ${invoice.invoiceDate.toLocaleDateString('ru-RU')}`
+      }, {
+        filename,
+        contentType: 'application/pdf'
+      });
+
+    } catch (error) {
+      console.error('Error sending PDF:', error);
+      await this.bot?.sendMessage(chatId, 
+        "❌ Ошибка при генерации PDF файла.\n\n" +
+        "Попробуйте использовать веб-платформу для скачивания файла."
+      );
+    }
+  }
+
+  private async sendExcelFile(chatId: number, invoiceId: string, userId: string) {
+    try {
+      await this.bot?.sendMessage(chatId, "⏳ Генерация Excel файла...");
+      
+      // Get invoice data
+      const invoice = await storage.getInvoiceById(invoiceId);
+      if (!invoice || invoice.userId !== userId) {
+        await this.bot?.sendMessage(chatId, "❌ Счет не найден или у вас нет доступа к нему");
+        return;
+      }
+
+      // Generate Excel through internal API call
+      const response = await fetch(`http://localhost:5000/api/invoices/${invoiceId}/excel`, {
+        headers: {
+          'Cookie': `connect.sid=${userId}` // Simplified auth for internal call
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate Excel');
+      }
+
+      const excelBuffer = Buffer.from(await response.arrayBuffer());
+      
+      const filename = `Счет_${invoice.invoiceNumber}_${new Date().toISOString().slice(0,10)}.xlsx`;
+      
+      await this.bot?.sendDocument(chatId, excelBuffer, {
+        caption: `📊 Счет №${invoice.invoiceNumber} от ${invoice.invoiceDate.toLocaleDateString('ru-RU')}`
+      }, {
+        filename,
+        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+    } catch (error) {
+      console.error('Error sending Excel:', error);
+      await this.bot?.sendMessage(chatId, 
+        "❌ Ошибка при генерации Excel файла.\n\n" +
+        "Попробуйте использовать веб-платформу для скачивания файла."
+      );
     }
   }
 }
