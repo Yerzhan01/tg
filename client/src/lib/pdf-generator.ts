@@ -369,13 +369,13 @@ export class PDFGenerator {
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
     const totalY = currentY + 5;
 
-    // "Итого:" в колонке "Цена"
+    // "Итого:" в колонке "Цена" - выравниваем по центру
     const totalLabelX = ST.startX + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
     pdf.text(prepareText('Итого:'), totalLabelX + (ST.cols[5].width / 2), totalY, { align: 'center' });
 
-    // Сумма итого - справа с отступом в колонке "Сумма"
+    // Сумма итого - строго в центре колонки "Сумма"
     const totalSumX = ST.startX + ST.cols.slice(0, 6).reduce((sum, col) => sum + col.width, 0);
-    pdf.text(this.formatMoney(data.totalAmount), totalSumX + ST.cols[6].width - 2, totalY, { align: 'right' });
+    pdf.text(this.formatMoney(data.totalAmount), totalSumX + (ST.cols[6].width / 2), totalY, { align: 'center' });
 
     return currentY + ST.rowHeight;
   }
