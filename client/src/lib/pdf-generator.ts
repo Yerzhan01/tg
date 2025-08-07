@@ -82,12 +82,12 @@ export class PDFGenerator {
       rowHeight: 8,
       cols: [
         { width: 12, align: 'center' },   // № - 6%
-        { width: 20, align: 'center' },   // Код - 11%
-        { width: 75, align: 'left' },     // Наименование - 39%
-        { width: 18, align: 'center' },   // Кол-во - 9%
+        { width: 15, align: 'center' },   // Код - меньше
+        { width: 82, align: 'left' },     // Наименование - больше
+        { width: 15, align: 'center' },   // Кол-во - меньше
         { width: 20, align: 'center' },   // Ед. - 11%
         { width: 32, align: 'right' },    // Цена - 17%
-        { width: 33, align: 'right' }     // Сумма - 17%
+        { width: 34, align: 'right' }     // Сумма - 18%
       ]
     },
 
