@@ -55,8 +55,8 @@ export class PDFGenerator {
       titleY: 30,
       height: 40,
       cols: {
-        iikX: 130,   // Уменьшил для ИИК
-        kbeX: 160,   // Уменьшил для КБЕ  
+        iikX: 145,   // Увеличил для длинного ИИК
+        kbeX: 170,   // Сдвинул вправо
         bikX: 130,   // Для БИК
         codeX: 160   // Для кода назначения
       },
@@ -244,10 +244,10 @@ export class PDFGenerator {
       data.supplier.name.substring(0, 37) + '...' : data.supplier.name;
     pdf.text(prepareText(supplierName), L.leftMargin + 2, PT.startY + 13);
     
-    // ИИК с переносом если нужно
+    // ИИК с уменьшенным шрифтом для длинных номеров
     const iik = data.supplier.iik;
     if (iik.length > 18) {
-      pdf.setFontSize(8);
+      pdf.setFontSize(7);
       pdf.text(iik, PT.cols.iikX + 1, PT.startY + 13);
       pdf.setFontSize(9);
     } else {
