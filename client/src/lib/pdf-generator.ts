@@ -55,10 +55,10 @@ export class PDFGenerator {
       titleY: 30,
       height: 40,
       cols: {
-        iikX: 140,
-        kbeX: 175,
-        bikX: 140,
-        codeX: 162
+        iikX: 130,   // Уменьшил для ИИК
+        kbeX: 160,   // Уменьшил для КБЕ  
+        bikX: 130,   // Для БИК
+        codeX: 160   // Для кода назначения
       },
       rows: {
         header1: 8,
@@ -87,13 +87,13 @@ export class PDFGenerator {
       startY: 120,
       rowHeight: 8,
       cols: [
-        { width: 10 },
-        { width: 20 },
-        { width: 85 },
-        { width: 15 },
-        { width: 15 },
-        { width: 25 },
-        { width: 25 }
+        { width: 10 },   // №
+        { width: 20 },   // Код
+        { width: 70 },   // Наименование - уменьшил
+        { width: 18 },   // Кол-во - увеличил
+        { width: 18 },   // Ед. - увеличил  
+        { width: 27 },   // Цена - увеличил
+        { width: 27 }    // Сумма - увеличил
       ]
     },
     
@@ -239,8 +239,21 @@ export class PDFGenerator {
     } catch {
       pdf.setFont('Arial', 'normal');
     }
-    pdf.text(prepareText(data.supplier.name), L.leftMargin + 2, PT.startY + 13);
-    pdf.text(data.supplier.iik, PT.cols.iikX + 2, PT.startY + 13);
+    // Обрезаем название если слишком длинное
+    const supplierName = data.supplier.name.length > 40 ? 
+      data.supplier.name.substring(0, 37) + '...' : data.supplier.name;
+    pdf.text(prepareText(supplierName), L.leftMargin + 2, PT.startY + 13);
+    
+    // ИИК с переносом если нужно
+    const iik = data.supplier.iik;
+    if (iik.length > 18) {
+      pdf.setFontSize(8);
+      pdf.text(iik, PT.cols.iikX + 1, PT.startY + 13);
+      pdf.setFontSize(9);
+    } else {
+      pdf.text(iik, PT.cols.iikX + 2, PT.startY + 13);
+    }
+    
     pdf.text(data.supplier.kbe || '19', PT.cols.kbeX + 2, PT.startY + 13);
     
     // Третья строка - БИН
@@ -254,7 +267,9 @@ export class PDFGenerator {
     }
     pdf.text(prepareText('Банк бенефициара:'), L.leftMargin + 2, PT.startY + 29);
     pdf.text(prepareText('БИК'), (PT.cols.bikX + PT.cols.codeX) / 2, PT.startY + 29, { align: 'center' });
-    pdf.text(prepareText('Код назначения платежа'), PT.cols.codeX + 1, PT.startY + 29);
+    pdf.setFontSize(8);
+    pdf.text(prepareText('Код назначения\nплатежа'), PT.cols.codeX + 1, PT.startY + 27);
+    pdf.setFontSize(9);
     
     // Пятая строка - данные банка
     try {
@@ -262,7 +277,10 @@ export class PDFGenerator {
     } catch {
       pdf.setFont('Arial', 'normal');
     }
-    pdf.text(prepareText(data.supplier.bank), L.leftMargin + 2, PT.startY + 37);
+    // Обрезаем название банка если слишком длинное
+    const bankName = data.supplier.bank.length > 35 ? 
+      data.supplier.bank.substring(0, 32) + '...' : data.supplier.bank;
+    pdf.text(prepareText(bankName), L.leftMargin + 2, PT.startY + 37);
     pdf.text(data.supplier.bik, PT.cols.bikX + 2, PT.startY + 37);
     pdf.text(data.supplier.paymentCode || '859', PT.cols.codeX + 2, PT.startY + 37);
   }
@@ -363,8 +381,10 @@ export class PDFGenerator {
       // Код (пустой)
       currentX += ST.cols[1].width;
       
-      // Наименование
-      pdf.text(prepareText(service.name), currentX + 2, currentY + 5);
+      // Наименование - обрезаем длинное название для меньшего столбца
+      const serviceName = service.name.length > 38 ? 
+        service.name.substring(0, 35) + '...' : service.name;
+      pdf.text(prepareText(serviceName), currentX + 2, currentY + 5);
       currentX += ST.cols[2].width;
       
       // Количество
@@ -375,12 +395,12 @@ export class PDFGenerator {
       pdf.text(prepareText(service.unit), currentX + 2, currentY + 5);
       currentX += ST.cols[4].width;
       
-      // Цена
-      pdf.text(this.formatMoney(service.price), currentX + 23, currentY + 5, { align: 'right' });
+      // Цена - исправляем позиционирование
+      pdf.text(this.formatMoney(service.price), currentX + 25, currentY + 5, { align: 'right' });
       currentX += ST.cols[5].width;
       
-      // Сумма
-      pdf.text(this.formatMoney(service.total), currentX + 23, currentY + 5, { align: 'right' });
+      // Сумма - исправляем позиционирование
+      pdf.text(this.formatMoney(service.total), currentX + 25, currentY + 5, { align: 'right' });
       
       currentY += ST.rowHeight;
     });
