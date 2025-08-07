@@ -1443,7 +1443,16 @@ export default function InvoiceGenerator() {
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
               <Button
-                onClick={() => window.open(`https://t.me/${process.env.VITE_TELEGRAM_BOT_USERNAME || 'your_invoice_bot'}`, '_blank')}
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/telegram/bot-info');
+                    const data = await response.json();
+                    window.open(`https://t.me/${data.botUsername}`, '_blank');
+                  } catch (error) {
+                    console.error('Error getting bot info:', error);
+                    window.open('https://t.me/kzgenerate_bot', '_blank');
+                  }
+                }}
                 className="mobile-button sm:flex-1 btn-primary text-sm"
               >
                 <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
