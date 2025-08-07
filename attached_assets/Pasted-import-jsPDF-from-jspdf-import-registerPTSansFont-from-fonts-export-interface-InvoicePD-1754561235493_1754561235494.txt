@@ -40,13 +40,13 @@ export class PDFGenerator {
     leftMargin: 20,
     rightMargin: 20,
     topMargin: 15,
-
+    
     warning: {
       startY: 12,
       lineHeight: 3.5,
       fontSize: 7
     },
-
+    
     paymentTable: {
       startY: 30,
       titleY: 25,
@@ -60,13 +60,13 @@ export class PDFGenerator {
       col4Width: 40,  // БИК
       col5Width: 55   // Код назначения
     },
-
+    
     invoiceTitle: {
       y: 60,
       lineY: 62,
       fontSize: 12
     },
-
+    
     parties: {
       supplierY: 70,
       buyerY: 78,
@@ -74,7 +74,7 @@ export class PDFGenerator {
       fontSize: 9,
       maxWidth: 170
     },
-
+    
     servicesTable: {
       startY: 95,
       rowHeight: 8,
@@ -88,7 +88,7 @@ export class PDFGenerator {
         { width: 30 }    // Сумма
       ]
     },
-
+    
     signature: {
       signatureY: 180,
       signatureX: 110,
@@ -110,12 +110,12 @@ export class PDFGenerator {
       format: 'a4',
       compress: true
     });
-
+    
     // Register PT Sans fonts for proper Cyrillic support
     const fontsRegistered = registerPTSansFont(pdf);
-
+    
     const L = this.LAYOUT;
-
+    
     // Set font for Cyrillic support
     if (fontsRegistered) {
       pdf.setFont('PTSans', 'normal');
@@ -132,37 +132,37 @@ export class PDFGenerator {
 
     // 1. ПРЕДУПРЕЖДАЮЩИЙ ТЕКСТ
     this.drawWarningText(pdf, data, prepareText);
-
+    
     // 2. ТАБЛИЦА ПЛАТЕЖНОГО ПОРУЧЕНИЯ (исправленная)
     this.drawPaymentTable(pdf, data, prepareText);
-
+    
     // 3. ЗАГОЛОВОК СЧЕТА
     this.drawInvoiceTitle(pdf, data, prepareText);
-
+    
     // 4. ИНФОРМАЦИЯ О СТОРОНАХ
     this.drawPartiesInfo(pdf, data, prepareText);
-
+    
     // 5. ТАБЛИЦА УСЛУГ
     const totalY = this.drawServicesTable(pdf, data, prepareText);
-
+    
     // 6. ИТОГОВАЯ ИНФОРМАЦИЯ
     const signatureY = this.drawTotalInfo(pdf, data, totalY, prepareText);
-
+    
     // 7. ПОДПИСЬ И ПЕЧАТЬ
     this.drawSignatureSection(pdf, signature, stamp, signatureY, prepareText);
-
+    
     return pdf.output('blob');
   }
 
   private static drawWarningText(pdf: jsPDF, data: InvoicePDFData, prepareText: (text: string) => string) {
     const L = this.LAYOUT;
-
+    
     pdf.setFontSize(L.warning.fontSize);
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
-
+    
     // Весь текст предупреждения в одном блоке
     const warningText = 'Внимание! Оплата данного счета означает согласие с условиями поставки товара. Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом, при наличии доверенности и документов удостоверяющих личность.';
-
+    
     const lines = pdf.splitTextToSize(prepareText(warningText), 170);
     lines.forEach((line: string, index: number) => {
       pdf.text(line, L.leftMargin, L.warning.startY + (index * L.warning.lineHeight));
@@ -224,20 +224,20 @@ export class PDFGenerator {
     pdf.text(prepareText('БИК'), startX + PT.col1Width + 12, startY + rowHeight + 4);
     pdf.text(data.supplier.bik, startX + PT.col1Width + 8, startY + rowHeight + 8);
     
-    // Код назначения платежа (правая нижняя правая) - ИСПРАВЛЕНО с правильным интервалом
-    pdf.setFontSize(6);
+    // Код назначения платежа (правая нижняя правая)
+    pdf.setFontSize(7);
     pdf.text(prepareText('Код назначения'), startX + PT.col1Width + PT.col4Width + 2, startY + rowHeight + 3);
     pdf.text(prepareText('платежа'), startX + PT.col1Width + PT.col4Width + 8, startY + rowHeight + 6);
-    pdf.setFontSize(9);
-    pdf.text(data.supplier.paymentCode || '859', startX + PT.col1Width + PT.col4Width + 18, startY + rowHeight + 10);
+    pdf.setFontSize(8);
+    pdf.text(data.supplier.paymentCode || '859', startX + PT.col1Width + PT.col4Width + 15, startY + rowHeight + 10);
   }
 
   private static drawInvoiceTitle(pdf: jsPDF, data: InvoicePDFData, prepareText: (text: string) => string) {
     const L = this.LAYOUT;
-
+    
     pdf.setFontSize(L.invoiceTitle.fontSize);
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
-
+    
     // Правильное форматирование даты
     const date = new Date(data.invoiceDate);
     const day = date.getDate();
@@ -248,10 +248,10 @@ export class PDFGenerator {
     const month = months[date.getMonth()];
     const year = date.getFullYear();
     const dateStr = `${day} ${month} ${year}`;
-
+    
     const titleText = prepareText(`Счет на оплату № ${data.invoiceNumber} от ${dateStr}`);
     pdf.text(titleText, L.leftMargin, L.invoiceTitle.y);
-
+    
     // Линия под заголовком
     const tableWidth = L.pageWidth - L.leftMargin - L.rightMargin;
     pdf.line(L.leftMargin, L.invoiceTitle.lineY, L.leftMargin + tableWidth, L.invoiceTitle.lineY);
@@ -259,14 +259,14 @@ export class PDFGenerator {
 
   private static drawPartiesInfo(pdf: jsPDF, data: InvoicePDFData, prepareText: (text: string) => string) {
     const L = this.LAYOUT;
-
+    
     pdf.setFontSize(L.parties.fontSize);
     try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); }
-
+    
     // Поставщик
     const supplierText = prepareText(`БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`);
     pdf.text(prepareText('Поставщик:'), L.leftMargin, L.parties.supplierY);
-
+    
     // Разбиваем длинный текст на строки
     const supplierLines = pdf.splitTextToSize(supplierText, L.parties.maxWidth);
     let currentY = L.parties.supplierY;
@@ -274,18 +274,18 @@ export class PDFGenerator {
       pdf.text(line, L.leftMargin + (index === 0 ? 25 : 0), currentY);
       if (index > 0) currentY += 4;
     });
-
+    
     // Покупатель
     const buyerText = prepareText(`БИН / ИИН: ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`);
     pdf.text(prepareText('Покупатель:'), L.leftMargin, L.parties.buyerY);
-
+    
     const buyerLines = pdf.splitTextToSize(buyerText, L.parties.maxWidth);
     currentY = L.parties.buyerY;
     buyerLines.forEach((line: string, index: number) => {
       pdf.text(line, L.leftMargin + (index === 0 ? 25 : 0), currentY);
       if (index > 0) currentY += 4;
     });
-
+    
     // Договор
     pdf.text(prepareText('Договор:'), L.leftMargin, L.parties.contractY);
     pdf.text(prepareText(data.contract), L.leftMargin + 25, L.parties.contractY);
@@ -297,27 +297,27 @@ export class PDFGenerator {
     const tableWidth = ST.cols.reduce((sum, col) => sum + col.width, 0);
     const rowCount = data.services.length + 2; // +1 header +1 total
     const tableHeight = ST.rowHeight * rowCount;
-
+    
     // Рисуем внешнюю рамку
     pdf.rect(L.leftMargin, ST.startY, tableWidth, tableHeight);
-
+    
     // Рисуем вертикальные линии
     let currentX = L.leftMargin;
     ST.cols.forEach(col => {
       currentX += col.width;
       pdf.line(currentX, ST.startY, currentX, ST.startY + tableHeight);
     });
-
+    
     // Рисуем горизонтальные линии
     for (let i = 1; i < rowCount; i++) {
       pdf.line(L.leftMargin, ST.startY + (ST.rowHeight * i), 
                L.leftMargin + tableWidth, ST.startY + (ST.rowHeight * i));
     }
-
+    
     // Заголовки таблицы
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
     pdf.setFontSize(8);
-
+    
     const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
     currentX = L.leftMargin;
     headers.forEach((header, i) => {
@@ -326,86 +326,86 @@ export class PDFGenerator {
       pdf.text(prepareText(header), textX, ST.startY + 5, { align: 'center' });
       currentX += col.width;
     });
-
+    
     // Данные таблицы
     try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); }
     let currentY = ST.startY + ST.rowHeight;
-
+    
     data.services.forEach((service, index) => {
       currentX = L.leftMargin;
-
+      
       // №
       pdf.text((index + 1).toString(), currentX + (ST.cols[0].width / 2), currentY + 5, { align: 'center' });
       currentX += ST.cols[0].width;
-
+      
       // Код (пустой)
       currentX += ST.cols[1].width;
-
+      
       // Наименование
       pdf.text(prepareText(service.name), currentX + 2, currentY + 5);
       currentX += ST.cols[2].width;
-
+      
       // Количество
       pdf.text(service.quantity.toFixed(1), currentX + (ST.cols[3].width / 2), currentY + 5, { align: 'center' });
       currentX += ST.cols[3].width;
-
+      
       // Единица
       pdf.text(prepareText(service.unit), currentX + 2, currentY + 5);
       currentX += ST.cols[4].width;
-
+      
       // Цена
       pdf.text(this.formatMoney(service.price), currentX + ST.cols[5].width - 2, currentY + 5, { align: 'right' });
       currentX += ST.cols[5].width;
-
+      
       // Сумма
       pdf.text(this.formatMoney(service.total), currentX + ST.cols[6].width - 2, currentY + 5, { align: 'right' });
-
+      
       currentY += ST.rowHeight;
     });
-
+    
     // Строка итого
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
     currentX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
     pdf.text(prepareText('Итого:'), currentX + (ST.cols[5].width / 2), currentY + 5, { align: 'center' });
     pdf.text(this.formatMoney(data.totalAmount), 
              L.leftMargin + tableWidth - 2, currentY + 5, { align: 'right' });
-
+    
     return currentY + ST.rowHeight;
   }
 
   private static drawTotalInfo(pdf: jsPDF, data: InvoicePDFData, startY: number, prepareText: (text: string) => string): number {
     const L = this.LAYOUT;
-
+    
     try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); }
     pdf.setFontSize(9);
-
+    
     const y1 = startY + 10;
     const y2 = y1 + 6;
-
+    
     pdf.text(prepareText(`Всего наименований ${data.services.length} на сумму ${this.formatMoney(data.totalAmount)} KZT`), 
              L.leftMargin, y1);
     pdf.text(prepareText(`Всего к оплате ${data.totalAmountWords}`), L.leftMargin, y2);
-
+    
     return y2 + 15;
   }
 
   private static drawSignatureSection(pdf: jsPDF, signature: string | undefined, stamp: string | undefined, startY: number, prepareText: (text: string) => string) {
     const L = this.LAYOUT;
     const tableWidth = L.pageWidth - L.leftMargin - L.rightMargin;
-
+    
     // Линия над подписью
     pdf.line(L.leftMargin, startY, L.leftMargin + tableWidth, startY);
-
+    
     // Текст
     try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); }
     pdf.setFontSize(9);
     pdf.text(prepareText('Исполнитель:'), L.leftMargin, startY + 12);
-
+    
     // Линия для подписи
     pdf.line(L.leftMargin + 30, startY + 10, L.leftMargin + 100, startY + 10);
-
+    
     pdf.text(prepareText('/бухгалтер/'), L.leftMargin + 105, startY + 12);
-
+    
     // Подпись
     if (signature) {
       try {
@@ -418,7 +418,7 @@ export class PDFGenerator {
         console.warn('Could not add signature:', error);
       }
     }
-
+    
     // Печать
     if (stamp) {
       try {
