@@ -76,16 +76,18 @@ export class PDFGenerator {
     },
 
     servicesTable: {
+      startX: 20,
       startY: 95,
+      totalWidth: 170,
       rowHeight: 8,
       cols: [
-        { width: 12 },   // № 
-        { width: 18 },   // Код
-        { width: 80 },   // Наименование - основная колонка
-        { width: 18 },   // Кол-во
-        { width: 18 },   // Ед.
-        { width: 24 },   // Цена
-        { width: 30 }    // Сумма - достаточно для отображения
+        { width: 12, align: 'center' },   // № - 7%
+        { width: 20, align: 'center' },   // Код - 12%
+        { width: 70, align: 'left' },     // Наименование - 41%
+        { width: 18, align: 'center' },   // Кол-во - 11%
+        { width: 20, align: 'center' },   // Ед. - 12%
+        { width: 30, align: 'right' },    // Цена - 17%
+        { width: 30, align: 'right' }     // Сумма - 17%
       ]
     },
 
@@ -293,84 +295,88 @@ export class PDFGenerator {
   private static drawServicesTable(pdf: jsPDF, data: InvoicePDFData, prepareText: (text: string) => string): number {
     const L = this.LAYOUT;
     const ST = L.servicesTable;
-    const tableWidth = ST.cols.reduce((sum, col) => sum + col.width, 0);
     const rowCount = data.services.length + 2; // +1 header +1 total
     const tableHeight = ST.rowHeight * rowCount;
 
-    // Рисуем внешнюю рамку
-    pdf.rect(L.leftMargin, ST.startY, tableWidth, tableHeight);
+    // 1. Рисуем внешнюю рамку
+    pdf.setLineWidth(0.5);
+    pdf.rect(ST.startX, ST.startY, ST.totalWidth, tableHeight);
 
-    // Рисуем вертикальные линии
-    let currentX = L.leftMargin;
-    ST.cols.forEach(col => {
+    // 2. Рисуем вертикальные линии (разделители колонок)
+    let currentX = ST.startX;
+    ST.cols.forEach((col, index) => {
+      if (index > 0) { // не рисуем линию перед первой колонкой
+        pdf.line(currentX, ST.startY, currentX, ST.startY + tableHeight);
+      }
       currentX += col.width;
-      pdf.line(currentX, ST.startY, currentX, ST.startY + tableHeight);
     });
 
-    // Рисуем горизонтальные линии
+    // 3. Рисуем горизонтальные линии
     for (let i = 1; i < rowCount; i++) {
-      pdf.line(L.leftMargin, ST.startY + (ST.rowHeight * i), 
-               L.leftMargin + tableWidth, ST.startY + (ST.rowHeight * i));
+      pdf.line(ST.startX, ST.startY + (ST.rowHeight * i), 
+               ST.startX + ST.totalWidth, ST.startY + (ST.rowHeight * i));
     }
 
-    // Заголовки таблицы
+    // 4. Заполняем заголовки
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
     pdf.setFontSize(8);
 
     const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
-    currentX = L.leftMargin;
+    currentX = ST.startX;
     headers.forEach((header, i) => {
       const col = ST.cols[i];
-      const textX = currentX + (col.width / 2);
+      const textX = currentX + (col.width / 2); // центрируем текст в колонке
       pdf.text(prepareText(header), textX, ST.startY + 5, { align: 'center' });
       currentX += col.width;
     });
 
-    // Данные таблицы
+    // 5. Заполняем данные
     try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); }
     let currentY = ST.startY + ST.rowHeight;
 
     data.services.forEach((service, index) => {
-      currentX = L.leftMargin;
+      currentX = ST.startX;
 
-      // №
+      // № - центр
       pdf.text((index + 1).toString(), currentX + (ST.cols[0].width / 2), currentY + 5, { align: 'center' });
       currentX += ST.cols[0].width;
 
-      // Код (пустой)
+      // Код - пустой
       currentX += ST.cols[1].width;
 
-      // Наименование
+      // Наименование - слева с отступом
       pdf.text(prepareText(service.name), currentX + 2, currentY + 5);
       currentX += ST.cols[2].width;
 
-      // Количество
+      // Кол-во - центр
       pdf.text(service.quantity.toFixed(1), currentX + (ST.cols[3].width / 2), currentY + 5, { align: 'center' });
       currentX += ST.cols[3].width;
 
-      // Единица
-      pdf.text(prepareText(service.unit), currentX + 2, currentY + 5);
+      // Ед. - центр
+      pdf.text(prepareText(service.unit), currentX + (ST.cols[4].width / 2), currentY + 5, { align: 'center' });
       currentX += ST.cols[4].width;
 
-      // Цена
+      // Цена - справа с отступом
       pdf.text(this.formatMoney(service.price), currentX + ST.cols[5].width - 2, currentY + 5, { align: 'right' });
       currentX += ST.cols[5].width;
 
-      // Сумма
+      // Сумма - справа с отступом
       pdf.text(this.formatMoney(service.total), currentX + ST.cols[6].width - 2, currentY + 5, { align: 'right' });
 
       currentY += ST.rowHeight;
     });
 
-    // Строка итого - точно как в образце
+    // 6. Строка "Итого"
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
-    pdf.setFontSize(9);
-    currentX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
-    pdf.text(prepareText('Итого:'), currentX + (ST.cols[5].width / 2), currentY + 5, { align: 'center' });
-    // Итоговая сумма справа, выровненная по центру колонки с достаточным пространством
-    const totalSumX = L.leftMargin + ST.cols.slice(0, 6).reduce((sum, col) => sum + col.width, 0);
-    pdf.text(this.formatMoney(data.totalAmount), 
-             totalSumX + (ST.cols[6].width / 2), currentY + 5, { align: 'center' });
+    const totalY = currentY + 5;
+
+    // "Итого:" в колонке "Цена"
+    const totalLabelX = ST.startX + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
+    pdf.text(prepareText('Итого:'), totalLabelX + (ST.cols[5].width / 2), totalY, { align: 'center' });
+
+    // Сумма итого - справа с отступом в колонке "Сумма"
+    const totalSumX = ST.startX + ST.cols.slice(0, 6).reduce((sum, col) => sum + col.width, 0);
+    pdf.text(this.formatMoney(data.totalAmount), totalSumX + ST.cols[6].width - 2, totalY, { align: 'right' });
 
     return currentY + ST.rowHeight;
   }

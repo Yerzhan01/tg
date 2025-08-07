@@ -1,0 +1,162 @@
+📊 Структура таблицы:
+typescriptconst servicesTable = {
+  // Общие параметры
+  startX: 20,        // отступ слева от края страницы
+  startY: 95,        // позиция Y начала таблицы
+  totalWidth: 170,   // общая ширина таблицы
+  rowHeight: 8,      // высота каждой строки
+  
+  // Размеры колонок (в мм для PDF)
+  columns: [
+    { 
+      name: "№", 
+      width: 12,      // 7% от общей ширины
+      align: "center" 
+    },
+    { 
+      name: "Код", 
+      width: 20,      // 12% от общей ширины
+      align: "center" 
+    },
+    { 
+      name: "Наименование", 
+      width: 70,      // 41% от общей ширины
+      align: "left" 
+    },
+    { 
+      name: "Кол-во", 
+      width: 18,      // 11% от общей ширины
+      align: "center" 
+    },
+    { 
+      name: "Ед.", 
+      width: 20,      // 12% от общей ширины
+      align: "center" 
+    },
+    { 
+      name: "Цена", 
+      width: 30,      // 17% от общей ширины
+      align: "right" 
+    },
+    { 
+      name: "Сумма", 
+      width: 30,      // 17% от общей ширины (должно быть чуть шире цены)
+      align: "right" 
+    }
+  ],
+  
+  // Стили текста
+  headerFont: {
+    family: "PTSans-Bold" || "Arial-Bold",
+    size: 8,
+    weight: "bold"
+  },
+  dataFont: {
+    family: "PTSans" || "Arial",
+    size: 8,
+    weight: "normal"
+  },
+  
+  // Стили границ
+  border: {
+    width: 0.5,      // толщина линий
+    color: "#000000"  // черный цвет
+  }
+}
+🎯 Алгоритм отрисовки:
+typescriptfunction drawServicesTable(pdf: jsPDF, data: any[]) {
+  const table = servicesTable;
+  
+  // 1. Рисуем внешнюю рамку
+  pdf.rect(table.startX, table.startY, table.totalWidth, table.rowHeight * 3);
+  
+  // 2. Рисуем вертикальные линии (разделители колонок)
+  let currentX = table.startX;
+  table.columns.forEach((col, index) => {
+    if (index > 0) { // не рисуем линию перед первой колонкой
+      pdf.line(currentX, table.startY, currentX, table.startY + (table.rowHeight * 3));
+    }
+    currentX += col.width;
+  });
+  
+  // 3. Рисуем горизонтальные линии
+  // Линия после заголовка
+  pdf.line(table.startX, table.startY + table.rowHeight, 
+           table.startX + table.totalWidth, table.startY + table.rowHeight);
+  
+  // Линия после данных (перед итого)
+  pdf.line(table.startX, table.startY + (table.rowHeight * 2), 
+           table.startX + table.totalWidth, table.startY + (table.rowHeight * 2));
+  
+  // 4. Заполняем заголовки
+  pdf.setFont(table.headerFont.family, 'bold');
+  pdf.setFontSize(table.headerFont.size);
+  
+  currentX = table.startX;
+  table.columns.forEach((col) => {
+    const textX = currentX + (col.width / 2); // центрируем текст в колонке
+    pdf.text(col.name, textX, table.startY + 5, { align: 'center' });
+    currentX += col.width;
+  });
+  
+  // 5. Заполняем данные
+  pdf.setFont(table.dataFont.family, 'normal');
+  const dataY = table.startY + table.rowHeight + 5;
+  
+  currentX = table.startX;
+  // № - центр
+  pdf.text("1", currentX + (table.columns[0].width / 2), dataY, { align: 'center' });
+  currentX += table.columns[0].width;
+  
+  // Код - пустой
+  currentX += table.columns[1].width;
+  
+  // Наименование - слева с отступом
+  pdf.text("Интеграция чат ботов", currentX + 2, dataY);
+  currentX += table.columns[2].width;
+  
+  // Кол-во - центр
+  pdf.text("1.0", currentX + (table.columns[3].width / 2), dataY, { align: 'center' });
+  currentX += table.columns[3].width;
+  
+  // Ед. - центр
+  pdf.text("Услуга", currentX + (table.columns[4].width / 2), dataY, { align: 'center' });
+  currentX += table.columns[4].width;
+  
+  // Цена - справа с отступом
+  pdf.text("300 000,00", currentX + table.columns[5].width - 2, dataY, { align: 'right' });
+  currentX += table.columns[5].width;
+  
+  // Сумма - справа с отступом
+  pdf.text("300 000,00", currentX + table.columns[6].width - 2, dataY, { align: 'right' });
+  
+  // 6. Строка "Итого"
+  pdf.setFont(table.headerFont.family, 'bold');
+  const totalY = table.startY + (table.rowHeight * 2) + 5;
+  
+  // "Итого:" в колонке "Цена"
+  const totalLabelX = table.startX + table.columns.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
+  pdf.text("Итого:", totalLabelX + (table.columns[5].width / 2), totalY, { align: 'center' });
+  
+  // Сумма итого
+  const totalSumX = table.startX + table.columns.slice(0, 6).reduce((sum, col) => sum + col.width, 0);
+  pdf.text("300 000,00", totalSumX + table.columns[6].width - 2, totalY, { align: 'right' });
+}
+🔍 Ключевые моменты:
+
+Пропорции колонок: Наименование самая широкая (41%), цена и сумма одинаковые (по 17%)
+Выравнивание:
+
+Числа - по правому краю с отступом 2мм
+Заголовки - по центру
+Текст - слева с отступом 2мм
+
+
+Размеры:
+
+Высота строки: 8мм
+Размер шрифта: 8pt
+Толщина границ: 0.5pt
+
+
+Всего 3 строки: заголовок + данные + итого
