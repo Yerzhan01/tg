@@ -355,12 +355,12 @@ export class PDFGenerator {
       pdf.text(prepareText(service.unit), currentX + (ST.cols[4].width / 2), currentY + 5, { align: 'center' });
       currentX += ST.cols[4].width;
 
-      // Цена - справа с отступом
-      pdf.text(this.formatMoney(service.price), currentX + ST.cols[5].width - 2, currentY + 5, { align: 'right' });
+      // Цена - справа с отступом от края колонки
+      pdf.text(this.formatMoney(service.price), currentX + ST.cols[5].width - 3, currentY + 5, { align: 'right' });
       currentX += ST.cols[5].width;
 
-      // Сумма - справа с отступом
-      pdf.text(this.formatMoney(service.total), currentX + ST.cols[6].width - 2, currentY + 5, { align: 'right' });
+      // Сумма - справа с отступом от края колонки
+      pdf.text(this.formatMoney(service.total), currentX + ST.cols[6].width - 3, currentY + 5, { align: 'right' });
 
       currentY += ST.rowHeight;
     });
@@ -373,9 +373,9 @@ export class PDFGenerator {
     const totalLabelX = ST.startX + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
     pdf.text(prepareText('Итого:'), totalLabelX + (ST.cols[5].width / 2), totalY, { align: 'center' });
 
-    // Сумма итого - строго в центре колонки "Сумма"
+    // Сумма итого - справа с отступом, строго внутри колонки "Сумма"
     const totalSumX = ST.startX + ST.cols.slice(0, 6).reduce((sum, col) => sum + col.width, 0);
-    pdf.text(this.formatMoney(data.totalAmount), totalSumX + (ST.cols[6].width / 2), totalY, { align: 'center' });
+    pdf.text(this.formatMoney(data.totalAmount), totalSumX + ST.cols[6].width - 3, totalY, { align: 'right' });
 
     return currentY + ST.rowHeight;
   }
