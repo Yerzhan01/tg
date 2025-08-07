@@ -76,18 +76,18 @@ export class PDFGenerator {
     },
 
     servicesTable: {
-      startX: 20,
+      startX: 10,
       startY: 95,
-      totalWidth: 170,
+      totalWidth: 190,
       rowHeight: 8,
       cols: [
-        { width: 12, align: 'center' },   // № - 7%
-        { width: 20, align: 'center' },   // Код - 12%
-        { width: 70, align: 'left' },     // Наименование - 41%
-        { width: 18, align: 'center' },   // Кол-во - 11%
-        { width: 20, align: 'center' },   // Ед. - 12%
-        { width: 30, align: 'right' },    // Цена - 17%
-        { width: 30, align: 'right' }     // Сумма - 17%
+        { width: 13, align: 'center' },   // № - 7%
+        { width: 23, align: 'center' },   // Код - 12%
+        { width: 78, align: 'left' },     // Наименование - 41%
+        { width: 21, align: 'center' },   // Кол-во - 11%
+        { width: 23, align: 'center' },   // Ед. - 12%
+        { width: 32, align: 'right' },    // Цена - 17%
+        { width: 32, align: 'right' }     // Сумма - 17%
       ]
     },
 
@@ -305,10 +305,9 @@ export class PDFGenerator {
     // 2. Рисуем вертикальные линии (разделители колонок)
     let currentX = ST.startX;
     ST.cols.forEach((col, index) => {
-      if (index > 0) { // не рисуем линию перед первой колонкой
-        pdf.line(currentX, ST.startY, currentX, ST.startY + tableHeight);
-      }
       currentX += col.width;
+      // Рисуем линию после каждой колонки (включая последнюю)
+      pdf.line(currentX, ST.startY, currentX, ST.startY + tableHeight);
     });
 
     // 3. Рисуем горизонтальные линии
