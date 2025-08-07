@@ -55,10 +55,10 @@ export class PDFGenerator {
       titleY: 30,
       height: 50,
       // Координаты по образцу
-      beneficiaryCell: { x: 10, y: 35, width: 140, height: 25 },
-      iikCell: { x: 150, y: 35, width: 75, height: 15 },
-      kbeCell: { x: 225, y: 35, width: 35, height: 15 },
-      bankCell: { x: 150, y: 50, width: 55, height: 15 },
+      beneficiaryCell: { x: 10, y: 35, width: 135, height: 25 },
+      iikCell: { x: 145, y: 35, width: 70, height: 15 },
+      kbeCell: { x: 215, y: 35, width: 45, height: 15 },
+      bankCell: { x: 145, y: 50, width: 60, height: 15 },
       codeCell: { x: 205, y: 50, width: 55, height: 15 },
       rows: {
         header1: 8,
@@ -230,9 +230,9 @@ export class PDFGenerator {
     
     // Заголовки в ячейках
     pdf.text(prepareText('Бенефициар:'), beneficiary.x + 2, beneficiary.y + 7);
-    pdf.text(prepareText('ИИК'), iik.x + 20, iik.y + 7);
-    pdf.text(prepareText('КБе'), kbe.x + 8, kbe.y + 7);
-    pdf.text(prepareText('БИК'), bank.x + 15, bank.y + 7);
+    pdf.text(prepareText('ИИК'), iik.x + 18, iik.y + 7);
+    pdf.text(prepareText('КБе'), kbe.x + 12, kbe.y + 7);
+    pdf.text(prepareText('БИК'), bank.x + 18, bank.y + 7);
     
     // Код назначения платежа в две строки
     pdf.setFontSize(6);
@@ -265,7 +265,7 @@ export class PDFGenerator {
     
     // КБе
     pdf.setFontSize(10);
-    pdf.text('19', kbe.x + 12, kbe.y + 10);
+    pdf.text('19', kbe.x + 18, kbe.y + 10);
     
     // БИК
     pdf.setFontSize(8);
