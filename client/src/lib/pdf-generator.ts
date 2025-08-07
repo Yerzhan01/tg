@@ -53,13 +53,13 @@ export class PDFGenerator {
     paymentTable: {
       startY: 35,
       titleY: 30,
-      height: 40,
-      cols: {
-        iikX: 145,   // Увеличил для длинного ИИК
-        kbeX: 170,   // Сдвинул вправо
-        bikX: 130,   // Для БИК
-        codeX: 160   // Для кода назначения
-      },
+      height: 50,
+      // Координаты по образцу
+      beneficiaryCell: { x: 10, y: 35, width: 140, height: 25 },
+      iikCell: { x: 150, y: 35, width: 75, height: 15 },
+      kbeCell: { x: 225, y: 35, width: 35, height: 15 },
+      bankCell: { x: 150, y: 50, width: 55, height: 15 },
+      codeCell: { x: 205, y: 50, width: 55, height: 15 },
       rows: {
         header1: 8,
         data1: 16,
@@ -194,95 +194,86 @@ export class PDFGenerator {
   private static drawPaymentTable(pdf: jsPDF, data: InvoicePDFData, prepareText: (text: string) => string) {
     const L = this.LAYOUT;
     const PT = L.paymentTable;
-    const tableWidth = L.pageWidth - L.leftMargin - L.rightMargin;
     
-    // Заголовок таблицы
-    pdf.setFontSize(10);
-    try {
-      pdf.setFont('PTSans', 'bold');
-    } catch {
-      pdf.setFont('Arial', 'bold');
-    }
-    pdf.text(prepareText('Образец платежного поручения'), L.pageWidth / 2, PT.titleY, { align: 'center' });
-    
-    // Основная рамка таблицы
-    pdf.rect(L.leftMargin, PT.startY, tableWidth, PT.height);
-    
-    // Вертикальные линии
-    pdf.line(PT.cols.iikX, PT.startY, PT.cols.iikX, PT.startY + PT.rows.binRow);
-    pdf.line(PT.cols.kbeX, PT.startY, PT.cols.kbeX, PT.startY + PT.rows.binRow);
-    pdf.line(PT.cols.bikX, PT.startY + PT.rows.binRow, PT.cols.bikX, PT.startY + PT.height);
-    pdf.line(PT.cols.codeX, PT.startY + PT.rows.binRow, PT.cols.codeX, PT.startY + PT.height);
-    
-    // Горизонтальные линии
-    pdf.line(L.leftMargin, PT.startY + PT.rows.header1, L.leftMargin + tableWidth, PT.startY + PT.rows.header1);
-    pdf.line(L.leftMargin, PT.startY + PT.rows.data1, L.leftMargin + tableWidth, PT.startY + PT.rows.data1);
-    pdf.line(L.leftMargin, PT.startY + PT.rows.binRow, L.leftMargin + tableWidth, PT.startY + PT.rows.binRow);
-    pdf.line(L.leftMargin, PT.startY + PT.rows.header2, L.leftMargin + tableWidth, PT.startY + PT.rows.header2);
-    
-    // Заполнение таблицы
-    pdf.setFontSize(9);
-    
-    // Первая строка - заголовки
-    try {
-      pdf.setFont('PTSans', 'bold');
-    } catch {
-      pdf.setFont('Arial', 'bold');
-    }
-    pdf.text(prepareText('Бенефициар:'), L.leftMargin + 2, PT.startY + 5);
-    pdf.text(prepareText('ИИК'), (PT.cols.iikX + PT.cols.kbeX) / 2, PT.startY + 5, { align: 'center' });
-    pdf.text(prepareText('Кбе'), (PT.cols.kbeX + L.leftMargin + tableWidth) / 2, PT.startY + 5, { align: 'center' });
-    
-    // Вторая строка - данные
-    try {
-      pdf.setFont('PTSans', 'normal');
-    } catch {
-      pdf.setFont('Arial', 'normal');
-    }
-    // Обрезаем название если слишком длинное
-    const supplierName = data.supplier.name.length > 40 ? 
-      data.supplier.name.substring(0, 37) + '...' : data.supplier.name;
-    pdf.text(prepareText(supplierName), L.leftMargin + 2, PT.startY + 13);
-    
-    // ИИК с уменьшенным шрифтом для длинных номеров
-    const iik = data.supplier.iik;
-    if (iik.length > 18) {
-      pdf.setFontSize(7);
-      pdf.text(iik, PT.cols.iikX + 1, PT.startY + 13);
-      pdf.setFontSize(9);
-    } else {
-      pdf.text(iik, PT.cols.iikX + 2, PT.startY + 13);
-    }
-    
-    pdf.text(data.supplier.kbe || '19', PT.cols.kbeX + 2, PT.startY + 13);
-    
-    // Третья строка - БИН
-    pdf.text(prepareText(`БИН: ${data.supplier.bin}`), L.leftMargin + 2, PT.startY + 21);
-    
-    // Четвертая строка - заголовки банка
-    try {
-      pdf.setFont('PTSans', 'bold');
-    } catch {
-      pdf.setFont('Arial', 'bold');
-    }
-    pdf.text(prepareText('Банк бенефициара:'), L.leftMargin + 2, PT.startY + 29);
-    pdf.text(prepareText('БИК'), (PT.cols.bikX + PT.cols.codeX) / 2, PT.startY + 29, { align: 'center' });
+    try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); };
     pdf.setFontSize(8);
-    pdf.text(prepareText('Код назначения\nплатежа'), PT.cols.codeX + 1, PT.startY + 27);
-    pdf.setFontSize(9);
     
-    // Пятая строка - данные банка
-    try {
-      pdf.setFont('PTSans', 'normal');
-    } catch {
-      pdf.setFont('Arial', 'normal');
-    }
-    // Обрезаем название банка если слишком длинное
-    const bankName = data.supplier.bank.length > 35 ? 
-      data.supplier.bank.substring(0, 32) + '...' : data.supplier.bank;
-    pdf.text(prepareText(bankName), L.leftMargin + 2, PT.startY + 37);
-    pdf.text(data.supplier.bik, PT.cols.bikX + 2, PT.startY + 37);
-    pdf.text(data.supplier.paymentCode || '859', PT.cols.codeX + 2, PT.startY + 37);
+    // Заголовок "Образец платежного поручения"
+    pdf.text(prepareText('Образец платежного поручения'), L.leftMargin, PT.titleY);
+    
+    // Рисуем таблицу точно по образцу
+    const beneficiary = PT.beneficiaryCell;
+    const iik = PT.iikCell;
+    const kbe = PT.kbeCell;
+    const bank = PT.bankCell;
+    const code = PT.codeCell;
+    
+    // Рисуем все ячейки
+    // Ячейка бенефициара (большая левая)
+    pdf.rect(beneficiary.x, beneficiary.y, beneficiary.width, beneficiary.height);
+    
+    // Ячейка ИИК (правая верхняя)
+    pdf.rect(iik.x, iik.y, iik.width, iik.height);
+    
+    // Ячейка КБе (правая верхняя малая)
+    pdf.rect(kbe.x, kbe.y, kbe.width, kbe.height);
+    
+    // Ячейка БИК (правая нижняя левая)
+    pdf.rect(bank.x, bank.y, bank.width, bank.height);
+    
+    // Ячейка кода назначения (правая нижняя правая)
+    pdf.rect(code.x, code.y, code.width, code.height);
+    
+    // Заголовки
+    try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); };
+    pdf.setFontSize(8);
+    
+    // Заголовки в ячейках
+    pdf.text(prepareText('Бенефициар:'), beneficiary.x + 2, beneficiary.y + 7);
+    pdf.text(prepareText('ИИК'), iik.x + 20, iik.y + 7);
+    pdf.text(prepareText('КБе'), kbe.x + 8, kbe.y + 7);
+    pdf.text(prepareText('БИК'), bank.x + 15, bank.y + 7);
+    
+    // Код назначения платежа в две строки
+    pdf.setFontSize(6);
+    pdf.text(prepareText('Код назначения'), code.x + 2, code.y + 5);
+    pdf.text(prepareText('платежа'), code.x + 8, code.y + 9);
+    
+    // Данные
+    try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); };
+    pdf.setFontSize(8);
+    
+    // Название поставщика
+    const supplierName = data.supplier.name.length > 35 ? 
+      data.supplier.name.substring(0, 32) + '...' : data.supplier.name;
+    pdf.text(prepareText(supplierName), beneficiary.x + 2, beneficiary.y + 15);
+    
+    // БИН поставщика
+    pdf.text(prepareText(`БИН: ${data.supplier.bin}`), beneficiary.x + 2, beneficiary.y + 22);
+    
+    // Банк бенефициара
+    pdf.setFontSize(7);
+    pdf.text(prepareText('Банк бенефициара:'), beneficiary.x + 2, beneficiary.y + 28);
+    const bankName = data.supplier.bank.length > 30 ?
+      data.supplier.bank.substring(0, 27) + '...' : data.supplier.bank;
+    pdf.text(prepareText(`АО "${bankName}"`), beneficiary.x + 2, beneficiary.y + 35);
+    
+    // ИИК
+    pdf.setFontSize(7);
+    const iikText = data.supplier.iik;
+    pdf.text(iikText, iik.x + 2, iik.y + 10);
+    
+    // КБе
+    pdf.setFontSize(10);
+    pdf.text('19', kbe.x + 12, kbe.y + 10);
+    
+    // БИК
+    pdf.setFontSize(8);
+    pdf.text(data.supplier.bik, bank.x + 8, bank.y + 10);
+    
+    // Код назначения платежа
+    pdf.setFontSize(10);
+    pdf.text('859', code.x + 18, code.y + 10);
   }
 
   private static drawInvoiceTitle(pdf: jsPDF, data: InvoicePDFData, prepareText: (text: string) => string) {
