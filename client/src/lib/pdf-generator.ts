@@ -79,13 +79,13 @@ export class PDFGenerator {
       startY: 95,
       rowHeight: 8,
       cols: [
-        { width: 12 },   // №
-        { width: 20 },   // Код
-        { width: 80 },   // Наименование
-        { width: 20 },   // Кол-во
-        { width: 20 },   // Ед.
-        { width: 30 },   // Цена
-        { width: 30 }    // Сумма
+        { width: 10 },   // № - уменьшил
+        { width: 15 },   // Код - уменьшил  
+        { width: 70 },   // Наименование - уменьшил
+        { width: 18 },   // Кол-во - уменьшил
+        { width: 15 },   // Ед. - уменьшил
+        { width: 35 },   // Цена - увеличил
+        { width: 37 }    // Сумма - увеличил для лучшей видимости
       ]
     },
 
@@ -362,13 +362,15 @@ export class PDFGenerator {
       currentY += ST.rowHeight;
     });
 
-    // Строка итого - исправлено для лучшей видимости
+    // Строка итого - исправлено для полной видимости
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
     pdf.setFontSize(9);
     currentX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
     pdf.text(prepareText('Итого:'), currentX + (ST.cols[5].width / 2), currentY + 5, { align: 'center' });
+    // Поместим итоговую сумму в правую колонку с достаточным отступом
+    const totalSumX = L.leftMargin + ST.cols.slice(0, 6).reduce((sum, col) => sum + col.width, 0);
     pdf.text(this.formatMoney(data.totalAmount), 
-             L.leftMargin + tableWidth - 5, currentY + 5, { align: 'right' });
+             totalSumX + (ST.cols[6].width / 2), currentY + 5, { align: 'center' });
 
     return currentY + ST.rowHeight;
   }
