@@ -131,3 +131,18 @@
     size: A4;
   }
 }
+
+/* Status management responsive layout */
+@media (max-width: 768px) {
+  .status-controls {
+    @apply flex-col space-y-2 space-x-0;
+  }
+  
+  .status-select {
+    @apply w-full;
+  }
+  
+  .action-buttons {
+    @apply grid grid-cols-2 gap-1;
+  }
+}

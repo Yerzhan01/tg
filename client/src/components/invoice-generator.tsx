@@ -53,6 +53,7 @@ interface InvoiceData {
 
 export default function InvoiceGenerator() {
   const [currentMode, setCurrentMode] = useState<Mode>('edit');
+  const [invoiceStatus, setInvoiceStatus] = useState<'draft' | 'sent' | 'paid'>('draft');
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: '2',
     invoiceDate: new Date().toISOString().split('T')[0],
@@ -228,7 +229,7 @@ export default function InvoiceGenerator() {
         contract: invoiceData.contract,
         totalAmount: getTotalAmount(),
         totalAmountWords: numberToWords(getTotalAmount()),
-        status: 'draft' as const,
+        status: invoiceStatus,
         supplier: {
           name: invoiceData.supplier.name,
           bin: invoiceData.supplier.bin,
@@ -1146,23 +1147,41 @@ export default function InvoiceGenerator() {
             <p className="text-gray-600 mt-1">Готовый счет на оплату для печати и экспорта</p>
           </div>
           
-          <div className="flex items-center space-x-3 no-print">
-            <Button onClick={downloadPDF} variant="outline">
-              <FileText className="w-4 h-4 mr-2" />
-              Скачать PDF
-            </Button>
-            <Button onClick={downloadExcel} variant="outline">
-              <Download className="w-4 h-4 mr-2" />
-              Скачать Excel
-            </Button>
-            <Button onClick={printInvoice} variant="outline">
-              <Printer className="w-4 h-4 mr-2" />
-              Печать
-            </Button>
-            <Button onClick={sendToTelegram} className="btn-primary">
-              <Send className="w-4 h-4 mr-2" />
-              Отправить в Telegram
-            </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 no-print">
+            {/* Status Management */}
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="status" className="text-sm font-medium">Статус:</Label>
+              <Select value={invoiceStatus} onValueChange={(value: 'draft' | 'sent' | 'paid') => setInvoiceStatus(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">🟡 Черновик</SelectItem>
+                  <SelectItem value="sent">🔵 Отправлен</SelectItem>
+                  <SelectItem value="paid">🟢 Оплачен</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={downloadPDF} variant="outline" className="mobile-button sm:w-auto text-xs sm:text-sm">
+                <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                PDF
+              </Button>
+              <Button onClick={downloadExcel} variant="outline" className="mobile-button sm:w-auto text-xs sm:text-sm">
+                <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Excel
+              </Button>
+              <Button onClick={printInvoice} variant="outline" className="mobile-button sm:w-auto text-xs sm:text-sm">
+                <Printer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Печать
+              </Button>
+              <Button onClick={sendToTelegram} className="mobile-button sm:w-auto btn-primary text-xs sm:text-sm">
+                <Send className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Telegram
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
