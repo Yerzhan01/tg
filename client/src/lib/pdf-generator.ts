@@ -87,7 +87,7 @@ export class PDFGenerator {
         { width: 21, align: 'center' },   // Кол-во - 11%
         { width: 23, align: 'center' },   // Ед. - 12%
         { width: 32, align: 'right' },    // Цена - 17%
-        { width: 32, align: 'right' }     // Сумма - 17%
+        { width: 32, align: 'right' }     // Сумма - 17% (ВАЖНО!)
       ]
     },
 
