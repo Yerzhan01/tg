@@ -224,12 +224,11 @@ export class PDFGenerator {
     pdf.text(prepareText('БИК'), startX + PT.col1Width + 12, startY + rowHeight + 4);
     pdf.text(data.supplier.bik, startX + PT.col1Width + 8, startY + rowHeight + 8);
     
-    // Код назначения платежа (правая нижняя правая) - ИСПРАВЛЕНО с правильным интервалом
+    // Код назначения платежа (правая нижняя правая) - ИСПРАВЛЕНО в одну строку
     pdf.setFontSize(6);
-    pdf.text(prepareText('Код назначения'), startX + PT.col1Width + PT.col4Width + 2, startY + rowHeight + 3);
-    pdf.text(prepareText('платежа'), startX + PT.col1Width + PT.col4Width + 8, startY + rowHeight + 6);
+    pdf.text(prepareText('Код назначения платежа'), startX + PT.col1Width + PT.col4Width + 2, startY + rowHeight + 4);
     pdf.setFontSize(9);
-    pdf.text(data.supplier.paymentCode || '859', startX + PT.col1Width + PT.col4Width + 18, startY + rowHeight + 10);
+    pdf.text(data.supplier.paymentCode || '859', startX + PT.col1Width + PT.col4Width + 18, startY + rowHeight + 8);
   }
 
   private static drawInvoiceTitle(pdf: jsPDF, data: InvoicePDFData, prepareText: (text: string) => string) {
@@ -263,15 +262,15 @@ export class PDFGenerator {
     pdf.setFontSize(L.parties.fontSize);
     try { pdf.setFont('PTSans', 'normal'); } catch { pdf.setFont('Arial', 'normal'); }
 
-    // Поставщик
-    const supplierText = prepareText(`БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`);
+    // Поставщик - исправлено для избежания слияния текста
     pdf.text(prepareText('Поставщик:'), L.leftMargin, L.parties.supplierY);
+    const supplierText = prepareText(`БИН / ИИН: ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`);
 
-    // Разбиваем длинный текст на строки
-    const supplierLines = pdf.splitTextToSize(supplierText, L.parties.maxWidth);
+    // Разбиваем длинный текст на строки с правильным отступом
+    const supplierLines = pdf.splitTextToSize(supplierText, L.parties.maxWidth - 25);
     let currentY = L.parties.supplierY;
     supplierLines.forEach((line: string, index: number) => {
-      pdf.text(line, L.leftMargin + (index === 0 ? 25 : 0), currentY);
+      pdf.text(line, L.leftMargin + 30, currentY + (index * 4));
       if (index > 0) currentY += 4;
     });
 
@@ -363,12 +362,13 @@ export class PDFGenerator {
       currentY += ST.rowHeight;
     });
 
-    // Строка итого
+    // Строка итого - исправлено для лучшей видимости
     try { pdf.setFont('PTSans', 'bold'); } catch { pdf.setFont('Arial', 'bold'); }
+    pdf.setFontSize(9);
     currentX = L.leftMargin + ST.cols.slice(0, 5).reduce((sum, col) => sum + col.width, 0);
     pdf.text(prepareText('Итого:'), currentX + (ST.cols[5].width / 2), currentY + 5, { align: 'center' });
     pdf.text(this.formatMoney(data.totalAmount), 
-             L.leftMargin + tableWidth - 2, currentY + 5, { align: 'right' });
+             L.leftMargin + tableWidth - 5, currentY + 5, { align: 'right' });
 
     return currentY + ST.rowHeight;
   }
