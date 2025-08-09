@@ -14,7 +14,7 @@ import {
   FileText, MessageCircle, LogOut, Edit3, Building, PenTool, Eye, 
   Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List, Download, Layers
 } from "lucide-react";
-import { numberToWords } from "@/lib/number-to-words";
+import { convertNumberToKazakhWords } from "@/lib/number-converter";
 import { validateBinIin, validateIik, validateBik, validateRequiredField, validateAmount } from "@/lib/validation";
 import { PDFGenerator, type InvoicePDFData } from "@/lib/pdf-generator";
 import { ExcelGenerator, type ExcelInvoiceData } from "@/lib/excel-generator";
@@ -228,7 +228,7 @@ export default function InvoiceGenerator() {
         invoiceDate: invoiceData.invoiceDate,
         contract: invoiceData.contract,
         totalAmount: getTotalAmount(),
-        totalAmountWords: numberToWords(getTotalAmount()),
+        totalAmountWords: convertNumberToKazakhWords(getTotalAmount()),
         status: invoiceStatus,
         supplier: {
           name: invoiceData.supplier.name,
@@ -356,7 +356,7 @@ export default function InvoiceGenerator() {
           total: service.total
         })),
         totalAmount: getTotalAmount(),
-        totalAmountWords: numberToWords(getTotalAmount())
+        totalAmountWords: convertNumberToKazakhWords(getTotalAmount())
       };
 
       // Generate PDF using the improved PDF generator
@@ -421,7 +421,7 @@ export default function InvoiceGenerator() {
           total: service.total
         })),
         totalAmount: getTotalAmount(),
-        totalAmountWords: numberToWords(getTotalAmount())
+        totalAmountWords: convertNumberToKazakhWords(getTotalAmount())
       };
 
       // Generate PDF using the improved PDF generator
@@ -511,7 +511,7 @@ export default function InvoiceGenerator() {
           total: service.total
         })),
         totalAmount: getTotalAmount(),
-        totalAmountWords: numberToWords(getTotalAmount())
+        totalAmountWords: convertNumberToKazakhWords(getTotalAmount())
       };
 
       // Генерируем Excel файл
@@ -827,7 +827,7 @@ export default function InvoiceGenerator() {
                 <div className="text-right">
                   <div className="text-sm text-gray-600">Итого:</div>
                   <div className="text-lg font-bold text-gray-900">{getTotalAmount().toLocaleString('ru-RU')} ₸</div>
-                  <div className="text-xs text-gray-500 mt-1">{numberToWords(getTotalAmount())}</div>
+                  <div className="text-xs text-gray-500 mt-1">{convertNumberToKazakhWords(getTotalAmount())}</div>
                 </div>
               </div>
             </div>
@@ -1258,7 +1258,7 @@ export default function InvoiceGenerator() {
           {/* Amount in Words */}
           <div className="mb-8">
             <p className="font-semibold">
-              Всего к оплате: {numberToWords(getTotalAmount())}
+              Всего к оплате: {convertNumberToKazakhWords(getTotalAmount())}
             </p>
           </div>
 
