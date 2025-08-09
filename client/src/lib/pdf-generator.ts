@@ -172,32 +172,32 @@ export class PDFGenerator {
     let currentY = y;
     pdf.setFontSize(this.L.FONT_SIZE.M);
     pdf.setFont('PTSans', 'normal');
-    const labelWidth = 30;
+    const labelWidth = 35;
 
-    // Поставщик
+    // Поставщик - более подробно как в образце
     pdf.setFont('PTSans', 'bold');
     pdf.text('Поставщик:', this.L.MARGIN, currentY);
     pdf.setFont('PTSans', 'normal');
     const supplierText = `БИН/ИИН ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`;
     const supplierLines = pdf.splitTextToSize(supplierText, this.L.CONTENT_WIDTH - labelWidth);
     pdf.text(supplierLines, this.L.MARGIN + labelWidth, currentY);
-    currentY += supplierLines.length * this.L.FONT_SIZE.M * 0.5 + 4; // Динамический отступ
+    currentY += Math.max(supplierLines.length * 3.5, 8);
 
-    // Покупатель
+    // Покупатель - более подробно как в образце  
     pdf.setFont('PTSans', 'bold');
     pdf.text('Покупатель:', this.L.MARGIN, currentY);
     pdf.setFont('PTSans', 'normal');
     const buyerText = `БИН/ИИН ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`;
     const buyerLines = pdf.splitTextToSize(buyerText, this.L.CONTENT_WIDTH - labelWidth);
     pdf.text(buyerLines, this.L.MARGIN + labelWidth, currentY);
-    currentY += buyerLines.length * this.L.FONT_SIZE.M * 0.5 + 4;
+    currentY += Math.max(buyerLines.length * 3.5, 8);
 
     // Договор
     pdf.setFont('PTSans', 'bold');
     pdf.text('Договор:', this.L.MARGIN, currentY);
     pdf.setFont('PTSans', 'normal');
-    pdf.text(data.contract, this.L.MARGIN + labelWidth, currentY);
-    currentY += this.L.FONT_SIZE.M * 0.5 + 4;
+    pdf.text(data.contract || 'Договор оферты', this.L.MARGIN + labelWidth, currentY);
+    currentY += 8;
 
     return currentY;
   }
@@ -285,14 +285,19 @@ export class PDFGenerator {
   private static drawTotalInfo(pdf: jsPDF, data: InvoicePDFData, y: number): number {
       pdf.setFontSize(this.L.FONT_SIZE.M);
       pdf.setFont('PTSans', 'normal');
+      
+      // Строка как в образце  
       const text1 = `Всего наименований ${data.services.length}, на сумму ${this.formatMoney(data.totalAmount)} KZT`;
       pdf.text(text1, this.L.MARGIN, y);
       
+      // Подчеркивание как в образце
+      pdf.line(this.L.MARGIN, y + 2, this.L.PAGE_WIDTH - this.L.MARGIN, y + 2);
+      
       pdf.setFont('PTSans', 'bold');
       const text2 = `Всего к оплате: ${data.totalAmountWords}`;
-      pdf.text(text2, this.L.MARGIN, y + 5);
+      pdf.text(text2, this.L.MARGIN, y + 8);
       
-      return y + 5;
+      return y + 8;
   }
   
   private static drawSignatureSection(pdf: jsPDF, data: InvoicePDFData, signature: string | undefined, stamp: string | undefined, y: number) {
