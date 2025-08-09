@@ -25,12 +25,9 @@ class InvoiceTelegramBot {
     if (!this.bot) return;
     
     try {
-      // Используем текущий домен для разработки, kazinvoice.brnd.kz для продакшена
-      const domain = process.env.NODE_ENV === 'production' 
-        ? 'kazinvoice.brnd.kz'
-        : (process.env.REPLIT_DEV_DOMAIN || 
-           process.env.REPLIT_DOMAIN || 
-           `${process.env.REPL_SLUG}--${process.env.REPL_OWNER}.replit.app`);
+      // ВСЕГДА используем продакшн домен для webhook, даже в разработке
+      // Это позволяет боту работать независимо от состояния Replit
+      const domain = 'kazinvoice.brnd.kz';
       
       const webhookUrl = `https://${domain}/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
       await this.bot.setWebHook(webhookUrl);
@@ -92,7 +89,7 @@ class InvoiceTelegramBot {
                 ]
               ],
               resize_keyboard: true,
-              persistent: true
+              one_time_keyboard: false
             }
           }
         );
