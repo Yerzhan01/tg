@@ -15,6 +15,12 @@ class InvoiceTelegramBot {
     }
   }
 
+  private getBaseUrl(): string {
+    return `https://${process.env.REPLIT_DEV_DOMAIN || 
+                      process.env.REPLIT_DOMAIN || 
+                      `${process.env.REPL_SLUG}--${process.env.REPL_OWNER}.replit.app`}`;
+  }
+
   private async setupWebhook() {
     if (!this.bot) return;
     
@@ -325,7 +331,7 @@ class InvoiceTelegramBot {
               { text: '📊 Скачать Excel', callback_data: `download_excel_${invoice.id}` }
             ],
             [
-              { text: '🔗 Открыть на сайте', url: `${process.env.FRONTEND_URL}/invoice/${invoice.id}` }
+              { text: '🔗 Открыть на сайте', url: `${this.getBaseUrl()}/invoice/${invoice.id}` }
             ]
           ]
         }
@@ -779,7 +785,7 @@ ${invoice.totalAmountWords}
               { text: '📊 Скачать Excel', callback_data: `download_excel_${invoice.id}` }
             ],
             [
-              { text: '🔗 Открыть на сайте', url: `${process.env.FRONTEND_URL}/invoice/${invoice.id}` }
+              { text: '🔗 Открыть на сайте', url: `${this.getBaseUrl()}/invoice/${invoice.id}` }
             ]
           ]
         }
