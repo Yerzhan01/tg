@@ -17,14 +17,28 @@ class InvoiceTelegramBot {
   }
 
   private getBaseUrl(): string {
-    return 'https://kazinvoice.brnd.kz';
+    if (process.env.NODE_ENV === 'production') {
+      return 'https://kazinvoice.brnd.kz';
+    }
+    
+    const devDomain = process.env.REPLIT_DEV_DOMAIN || 
+                     process.env.REPLIT_DOMAIN || 
+                     `${process.env.REPL_SLUG}--${process.env.REPL_OWNER}.replit.app`;
+    return `https://${devDomain}`;
   }
 
   private async setupWebhook() {
     if (!this.bot) return;
     
     try {
-      const webhookUrl = `https://kazinvoice.brnd.kz/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
+      // Используем текущий домен для разработки, kazinvoice.brnd.kz для продакшена
+      const domain = process.env.NODE_ENV === 'production' 
+        ? 'kazinvoice.brnd.kz'
+        : (process.env.REPLIT_DEV_DOMAIN || 
+           process.env.REPLIT_DOMAIN || 
+           `${process.env.REPL_SLUG}--${process.env.REPL_OWNER}.replit.app`);
+      
+      const webhookUrl = `https://${domain}/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
       await this.bot.setWebHook(webhookUrl);
       console.log('Telegram webhook set to:', webhookUrl);
     } catch (error) {
