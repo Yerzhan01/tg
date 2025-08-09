@@ -540,7 +540,8 @@ export default function InvoiceGenerator() {
     if (!template) return;
 
     // Заменяем все услуги на услуги из шаблона
-    const templateServices = template.services.map(service => ({
+    const templateServices = template.services.map((service, index) => ({
+      id: Date.now() + index,
       name: service.name,
       quantity: 1,
       unit: service.unit,
