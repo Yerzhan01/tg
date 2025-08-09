@@ -153,24 +153,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      console.log('Clearing data for user:', req.session.userId);
       await storage.clearAllUserData(req.session.userId);
+      console.log('Data cleared successfully for user:', req.session.userId);
       res.json({ message: "Все ваши данные удалены" });
     } catch (error) {
-      res.status(500).json({ message: "Failed to clear user data" });
+      console.error('Error clearing user data:', error);
+      res.status(500).json({ message: "Failed to clear user data", error: error.message });
     }
   });
 
   // Clear all data endpoint (admin only)
   app.post("/api/clear-all-data", async (req, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
+      console.log('Clearing all database data...');
       await storage.clearAllData();
+      console.log('All data cleared successfully');
       res.json({ message: "Вся база данных очищена" });
     } catch (error) {
-      res.status(500).json({ message: "Failed to clear all data" });
+      console.error('Error clearing all data:', error);
+      res.status(500).json({ message: "Failed to clear all data", error: error.message });
+    }
+  });
+
+  // Special admin endpoint for full database reset (no auth required)
+  app.post("/api/admin/reset-database", async (req, res) => {
+    try {
+      console.log('🚨 ADMIN: Resetting entire database...');
+      await storage.clearAllData();
+      console.log('✅ ADMIN: Database reset completed');
+      res.json({ 
+        message: "База данных полностью сброшена", 
+        success: true,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ ADMIN: Error resetting database:', error);
+      res.status(500).json({ 
+        message: "Ошибка сброса базы данных", 
+        error: error.message,
+        success: false
+      });
     }
   });
 
