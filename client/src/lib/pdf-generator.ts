@@ -135,24 +135,53 @@ export class PDFGenerator {
     pdf.line(x + col1Width, y, x + col1Width, y + rowHeight * 2);
     pdf.line(x + col1Width + col2Width, y, x + col1Width + col2Width, y + rowHeight * 2);
 
-    // Заполнение текстом с переносами
-    this.drawWrappedTextInCell(pdf, 'Бенефициар:', x, y, col1Width, rowHeight, { halign: 'left', fontStyle: 'bold' });
-    this.drawWrappedTextInCell(pdf, `${data.supplier.name}\nБИН: ${data.supplier.bin}`, x, y, col1Width, rowHeight, { halign: 'left', isMultiline: true });
+    // Заполнение текстом - упрощенно без наложений
+    pdf.setFont('PTSans', 'bold');
+    pdf.setFontSize(8);
+    pdf.text('Бенефициар:', x + 2, y + 3);
+    
+    pdf.setFont('PTSans', 'normal');
+    pdf.setFontSize(7);
+    const supplierName = pdf.splitTextToSize(data.supplier.name, col1Width - 4);
+    pdf.text(supplierName, x + 2, y + 7);
+    pdf.text(`БИН: ${data.supplier.bin}`, x + 2, y + 13);
 
-    this.drawWrappedTextInCell(pdf, 'ИИК', x + col1Width, y, col2Width, rowHeight / 2, { halign: 'center', fontStyle: 'bold' });
-    this.drawWrappedTextInCell(pdf, data.supplier.iik, x + col1Width, y + rowHeight / 2, col2Width, rowHeight / 2, { halign: 'center' });
+    // ИИК
+    pdf.setFont('PTSans', 'bold');
+    pdf.setFontSize(8);
+    pdf.text('ИИК', x + col1Width + col2Width/2, y + 3, { align: 'center' });
+    pdf.setFont('PTSans', 'normal');
+    pdf.text(data.supplier.iik, x + col1Width + col2Width/2, y + 8, { align: 'center' });
 
-    this.drawWrappedTextInCell(pdf, 'КБе', x + col1Width + col2Width, y, col3Width, rowHeight / 2, { halign: 'center', fontStyle: 'bold' });
-    this.drawWrappedTextInCell(pdf, data.supplier.kbe, x + col1Width + col2Width, y + rowHeight / 2, col3Width, rowHeight / 2, { halign: 'center' });
+    // КБе
+    pdf.setFont('PTSans', 'bold');
+    pdf.text('КБе', x + col1Width + col2Width + col3Width/2, y + 3, { align: 'center' });
+    pdf.setFont('PTSans', 'normal');
+    pdf.text(data.supplier.kbe, x + col1Width + col2Width + col3Width/2, y + 8, { align: 'center' });
 
-    this.drawWrappedTextInCell(pdf, 'Банк бенефициара:', x, y + rowHeight, col1Width, rowHeight, { halign: 'left', fontStyle: 'bold' });
-    this.drawWrappedTextInCell(pdf, data.supplier.bank, x, y + rowHeight, col1Width, rowHeight, { halign: 'left', isMultiline: true, yOffset: 4 });
+    // Банк бенефициара
+    pdf.setFont('PTSans', 'bold');
+    pdf.setFontSize(8);
+    pdf.text('Банк бенефициара:', x + 2, y + rowHeight + 3);
+    
+    pdf.setFont('PTSans', 'normal');
+    pdf.setFontSize(7);
+    const bankName = pdf.splitTextToSize(data.supplier.bank, col1Width - 4);
+    pdf.text(bankName, x + 2, y + rowHeight + 7);
 
-    this.drawWrappedTextInCell(pdf, 'БИК', x + col1Width, y + rowHeight, col2Width, rowHeight / 2, { halign: 'center', fontStyle: 'bold' });
-    this.drawWrappedTextInCell(pdf, data.supplier.bik, x + col1Width, y + rowHeight + rowHeight / 2, col2Width, rowHeight / 2, { halign: 'center' });
+    // БИК
+    pdf.setFont('PTSans', 'bold');
+    pdf.setFontSize(8);
+    pdf.text('БИК', x + col1Width + col2Width/2, y + rowHeight + 3, { align: 'center' });
+    pdf.setFont('PTSans', 'normal');
+    pdf.text(data.supplier.bik, x + col1Width + col2Width/2, y + rowHeight + 8, { align: 'center' });
 
-    this.drawWrappedTextInCell(pdf, 'Код назначения платежа', x + col1Width + col2Width, y + rowHeight, col3Width, rowHeight / 2, { halign: 'center', fontStyle: 'bold', fontSize: 7 });
-    this.drawWrappedTextInCell(pdf, data.supplier.paymentCode, x + col1Width + col2Width, y + rowHeight + rowHeight / 2, col3Width, rowHeight / 2, { halign: 'center' });
+    // Код назначения платежа
+    pdf.setFont('PTSans', 'bold');
+    pdf.setFontSize(7);
+    pdf.text('Код назначения платежа', x + col1Width + col2Width + col3Width/2, y + rowHeight + 3, { align: 'center' });
+    pdf.setFont('PTSans', 'normal');
+    pdf.text(data.supplier.paymentCode, x + col1Width + col2Width + col3Width/2, y + rowHeight + 8, { align: 'center' });
   }
 
   private static drawInvoiceTitle(pdf: jsPDF, data: InvoicePDFData, y: number) {
