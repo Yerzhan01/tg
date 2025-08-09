@@ -232,8 +232,8 @@ export class PDFGenerator {
   }
   
   private static drawServicesTable(pdf: jsPDF, data: InvoicePDFData, y: number): number {
-    // Правильные размеры колонок как в HTML примере
-    const colWidths = [30, 80, 60, 60, 50, 90, 90]; // Увеличиваем ширины для лучшего отображения
+    // Размеры колонок под ширину A4 (170mm доступной ширины)
+    const colWidths = [12, 15, 70, 15, 15, 20, 23]; // Всего 170mm
     let colX = this.L.MARGIN;
     const colXPositions: number[] = [];
     
