@@ -217,8 +217,7 @@ export class PDFGenerator {
     const rowHeight = 8;
     let currentY = y;
     
-    // Заголовок таблицы - светло-серый фон как в образце
-    pdf.setFillColor(240, 240, 240);
+    // Заголовок таблицы - только границы, без заливки
     pdf.setTextColor(0, 0, 0);
     pdf.setFont('PTSans', 'bold');
     pdf.setFontSize(9);
@@ -226,14 +225,13 @@ export class PDFGenerator {
     const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
     
     headers.forEach((header, index) => {
-      pdf.rect(colXPositions[index], currentY, colWidths[index], rowHeight, 'FD');
+      pdf.rect(colXPositions[index], currentY, colWidths[index], rowHeight, 'D');
       pdf.text(header, colXPositions[index] + colWidths[index]/2, currentY + 5, { align: 'center' });
     });
     
     currentY += rowHeight;
     
     // Строки данных
-    pdf.setFillColor(255, 255, 255);
     pdf.setTextColor(0, 0, 0);
     pdf.setFont('PTSans', 'normal');
     pdf.setFontSize(9);
@@ -270,6 +268,7 @@ export class PDFGenerator {
     // Строка "Итого"
     pdf.setFont('PTSans', 'bold');
     pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(9);
     
     // Объединяем первые 6 колонок
     const totalColWidth = colWidths.slice(0, 6).reduce((sum, width) => sum + width, 0);
