@@ -63,11 +63,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid Telegram authentication" });
       }
 
-      // Используем telegramStorage для пользователей (продакшн база)
-      let user = await telegramStorage.getUserByTelegramId(telegramData.id.toString());
+      // В продакшене используем единую базу, в разработке - telegramStorage
+      const userStorage = process.env.NODE_ENV === 'production' ? storage : telegramStorage;
+      let user = await userStorage.getUserByTelegramId(telegramData.id.toString());
       
       if (!user) {
-        user = await telegramStorage.createUser({
+        user = await userStorage.createUser({
           telegramId: telegramData.id.toString(),
           username: telegramData.username,
           firstName: telegramData.first_name,
@@ -76,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Update user data
-        user = await telegramStorage.updateUser(user.id, {
+        user = await userStorage.updateUser(user.id, {
           username: telegramData.username,
           firstName: telegramData.first_name,
           lastName: telegramData.last_name,
@@ -101,8 +102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      // Проверяем существование пользователя в продакшн базе
-      const user = await telegramStorage.getUserById(req.session.userId);
+      // В продакшене используем единую базу, в разработке - telegramStorage  
+      const userStorage = process.env.NODE_ENV === 'production' ? storage : telegramStorage;
+      const user = await userStorage.getUserById(req.session.userId);
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
