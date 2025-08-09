@@ -362,9 +362,16 @@ export default function InvoiceGenerator() {
       // Generate PDF using the improved PDF generator
       const pdf = await PDFGenerator.generateInvoicePDF(pdfData, signature || undefined, stamp || undefined);
       
-      // Download the PDF
-      const filename = `Счет_${invoiceData.invoiceNumber}_${invoiceData.invoiceDate}.pdf`;
-      PDFGenerator.downloadPDF(pdf, filename);
+      // Создаем blob URL и скачиваем файл напрямую
+      const blob = new Blob([pdf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Счет_${invoiceData.invoiceNumber}_${invoiceData.invoiceDate}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
       toast({
         title: "PDF скачан",
