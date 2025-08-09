@@ -98,7 +98,7 @@ export class PDFGenerator {
 
     this.drawSignatureSection(pdf, data, signature, stamp, currentY);
 
-    return pdf.output('blob');
+    return pdf;
   }
 
   // =================================================================
@@ -353,9 +353,16 @@ export class PDFGenerator {
         pdf.setFont('PTSans', 'bold');
         pdf.text(titleLine, textX, y + 4, { align: halign });
         pdf.setFont('PTSans', 'normal');
-        pdf.text(valueLine, textX, y + 8, { align: halign });
+        pdf.text(valueLine || '', textX, y + 8, { align: halign });
     } else {
-        pdf.text(lines, textX, textY + yOffset, { align: halign });
+        // Исправляем вызов pdf.text для совместимости с jsPDF
+        if (Array.isArray(lines)) {
+          lines.forEach((line, index) => {
+            pdf.text(line, textX, textY + yOffset + (index * fontSize * 0.35), { align: halign });
+          });
+        } else {
+          pdf.text(lines, textX, textY + yOffset, { align: halign });
+        }
     }
   }
 
@@ -370,7 +377,7 @@ export class PDFGenerator {
     pdf.save(filename);
   }
 
-  // Функция для создания PDF с данными из формы
+  // Функция для создания PDF с данными из формы (возвращает blob для обратной совместимости)
   static async createInvoicePDF(invoiceData: any, signatureFile?: File, stampFile?: File): Promise<Blob> {
     // Конвертируем данные в формат PDFData
     const pdfData: InvoicePDFData = {
@@ -415,7 +422,8 @@ export class PDFGenerator {
       stampBase64 = await this.fileToBase64(stampFile);
     }
 
-    return await this.generateInvoicePDF(pdfData, signatureBase64, stampBase64);
+    const pdf = await this.generateInvoicePDF(pdfData, signatureBase64, stampBase64);
+    return pdf.output('blob');
   }
 
   private static fileToBase64(file: File): Promise<string> {
