@@ -64,7 +64,7 @@ export class PDFGenerator {
     data: InvoicePDFData,
     signature?: string,
     stamp?: string
-  ): Promise<Blob> {
+  ): Promise<jsPDF> {
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -366,15 +366,8 @@ export class PDFGenerator {
     }).format(amount);
   }
 
-  static downloadPDF(blob: Blob, filename: string) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  static downloadPDF(pdf: jsPDF, filename: string) {
+    pdf.save(filename);
   }
 
   // Функция для создания PDF с данными из формы
@@ -422,7 +415,7 @@ export class PDFGenerator {
       stampBase64 = await this.fileToBase64(stampFile);
     }
 
-    return this.generateInvoicePDF(pdfData, signatureBase64, stampBase64);
+    return await this.generateInvoicePDF(pdfData, signatureBase64, stampBase64);
   }
 
   private static fileToBase64(file: File): Promise<string> {

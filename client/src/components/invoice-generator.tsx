@@ -362,16 +362,9 @@ export default function InvoiceGenerator() {
       // Generate PDF using the improved PDF generator
       const pdf = await PDFGenerator.generateInvoicePDF(pdfData, signature || undefined, stamp || undefined);
       
-      // Создаем blob URL и скачиваем файл напрямую
-      const blob = new Blob([pdf], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Счет_${invoiceData.invoiceNumber}_${invoiceData.invoiceDate}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Скачиваем файл
+      const filename = `Счет_${invoiceData.invoiceNumber}_${invoiceData.invoiceDate}.pdf`;
+      PDFGenerator.downloadPDF(pdf, filename);
       
       toast({
         title: "PDF скачан",
@@ -434,7 +427,8 @@ export default function InvoiceGenerator() {
       // Generate PDF using the improved PDF generator
       const pdf = await PDFGenerator.generateInvoicePDF(pdfData, signature || undefined, stamp || undefined);
       
-      // Convert blob to base64
+      // Convert PDF to blob for sending to Telegram
+      const pdfBlob = pdf.output('blob');
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64data = reader.result as string;
@@ -478,7 +472,7 @@ export default function InvoiceGenerator() {
           });
         }
       };
-      reader.readAsDataURL(pdf as Blob);
+      reader.readAsDataURL(pdfBlob);
       
     } catch (error) {
       console.error('Failed to generate PDF for Telegram:', error);
