@@ -533,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         botUsername: process.env.TELEGRAM_BOT_USERNAME,
-        webhookUrl: `${process.env.REPLIT_DEV_DOMAIN || req.get('host')}/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`,
+        webhookUrl: `https://kazinvoice.brnd.kz/api/telegram/webhook/${process.env.TELEGRAM_BOT_TOKEN}`,
         configured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME)
       });
     } catch (error) {
