@@ -336,7 +336,7 @@ export class PDFGenerator {
       const signatureLineY = y + 15;
       pdf.text('Исполнитель:', this.L.MARGIN, signatureLineY);
       pdf.line(this.L.MARGIN + 30, signatureLineY, this.L.MARGIN + 90, signatureLineY);
-      pdf.text(`/ (${data.supplier.name})`, this.L.MARGIN + 95, signatureLineY);
+      pdf.text('/ (Бухгалтер)', this.L.MARGIN + 95, signatureLineY);
       
       if (stamp) {
           pdf.addImage(stamp, 'PNG', this.L.MARGIN + 40, signatureLineY - 20, 30, 30);
