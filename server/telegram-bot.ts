@@ -12,6 +12,7 @@ class InvoiceTelegramBot {
       this.bot = new TelegramBot(token, { polling: false });
       this.setupCommands();
       this.setupWebhook();
+      this.setupBotMenu();
     }
   }
 
@@ -35,6 +36,26 @@ class InvoiceTelegramBot {
       console.log('Telegram webhook set to:', webhookUrl);
     } catch (error) {
       console.error('Failed to set Telegram webhook:', error);
+    }
+  }
+
+  private async setupBotMenu() {
+    if (!this.bot) return;
+    
+    try {
+      // Устанавливаем команды для меню бота
+      await this.bot.setMyCommands([
+        { command: 'start', description: '🚀 Запустить бота' },
+        { command: 'invoices', description: '📋 Мои счета' },
+        { command: 'create', description: '➕ Создать счет' },
+        { command: 'search', description: '🔍 Поиск счетов' },
+        { command: 'stats', description: '📊 Статистика' },
+        { command: 'help', description: '❓ Помощь' }
+      ]);
+      
+      console.log('✅ Меню бота настроено');
+    } catch (error) {
+      console.error('❌ Ошибка настройки меню бота:', error);
     }
   }
 
@@ -173,11 +194,40 @@ class InvoiceTelegramBot {
       }
     });
 
+    // Обработчик команды /create  
     this.bot.onText(/\/create/, async (msg) => {
       const chatId = msg.chat.id;
-      await this.bot?.sendMessage(chatId,
-        `Для создания нового счета перейдите на веб-платформу.\n\n` +
-        `После создания счета вы можете отправить его в этот чат для получения готовых файлов.`
+      const telegramId = msg.from?.id.toString();
+
+      if (!telegramId) return;
+
+      const user = await storage.getUserByTelegramId(telegramId);
+      if (!user) {
+        await this.bot?.sendMessage(chatId, 
+          '⚠️ Вы не зарегистрированы. Используйте команду /start для регистрации.');
+        return;
+      }
+
+      const baseUrl = this.getBaseUrl();
+      await this.bot?.sendMessage(chatId, 
+        `➕ **Создание нового счета**\n\n` +
+        `Для создания счета перейдите в веб-приложение:\n` +
+        `🔗 [Открыть генератор счетов](${baseUrl})\n\n` +
+        `После создания счета я отправлю вам уведомление с PDF и Excel файлами.`,
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🌐 Открыть веб-приложение', url: baseUrl }
+              ],
+              [
+                { text: '📋 Мои счета', callback_data: 'list_invoices' },
+                { text: '🏠 Главное меню', callback_data: 'main_menu' }
+              ]
+            ]
+          }
+        }
       );
     });
 
@@ -199,22 +249,36 @@ class InvoiceTelegramBot {
     this.bot.onText(/\/help/, async (msg) => {
       const chatId = msg.chat.id;
       await this.bot?.sendMessage(chatId,
-        `🤖 Помощь по боту\n\n` +
+        `❓ **Помощь по боту**\n\n` +
         `Этот бот интегрирован с веб-платформой для генерации счетов РК.\n\n` +
-        `Возможности:\n` +
-        `• Просмотр списка ваших счетов\n` +
-        `• Получение готовых PDF и Excel файлов\n` +
-        `• Поиск и статистика по счетам\n` +
-        `• Управление статусами счетов\n` +
-        `• Уведомления о новых счетах\n\n` +
-        `Команды:\n` +
-        `/start - Начать работу\n` +
-        `/invoices - Список счетов\n` +
-        `/search <запрос> - Поиск счетов\n` +
-        `/stats - Статистика по счетам\n` +
-        `/settings - Настройки уведомлений\n` +
-        `/create - Создать счет\n` +
-        `/help - Эта справка`
+        `**Основные возможности:**\n` +
+        `• 📋 Просмотр списка ваших счетов\n` +
+        `• 📄 Получение готовых PDF и Excel файлов\n` +
+        `• 🔍 Поиск и статистика по счетам\n` +
+        `• 📊 Управление статусами счетов\n` +
+        `• 🔔 Уведомления о новых счетах\n\n` +
+        `**Команды (также доступны в меню):**\n` +
+        `🚀 /start - Начать работу\n` +
+        `📋 /invoices - Список счетов\n` +
+        `➕ /create - Создать новый счет\n` +
+        `🔍 /search <запрос> - Поиск счетов\n` +
+        `📊 /stats - Статистика по счетам\n` +
+        `❓ /help - Эта справка`,
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '📋 Мои счета', callback_data: 'list_invoices' },
+                { text: '➕ Создать счет', callback_data: 'create_invoice' }
+              ],
+              [
+                { text: '🔍 Поиск', callback_data: 'search_invoices' },
+                { text: '📊 Статистика', callback_data: 'show_stats' }
+              ]
+            ]
+          }
+        }
       );
     });
 
@@ -235,7 +299,75 @@ class InvoiceTelegramBot {
       }
 
       try {
-        if (data.startsWith('download_pdf_')) {
+        if (data === 'list_invoices') {
+          await this.showInvoicesList(chatId, user.id);
+          await this.bot?.answerCallbackQuery(callbackQuery.id);
+          
+        } else if (data === 'create_invoice') {
+          const baseUrl = this.getBaseUrl();
+          await this.bot?.answerCallbackQuery(callbackQuery.id, {
+            text: "Открываю веб-приложение..."
+          });
+          
+          await this.bot?.sendMessage(chatId, 
+            `➕ **Создать новый счет**\n\n` +
+            `Перейдите в веб-приложение для создания счета:`,
+            { 
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🌐 Открыть веб-приложение', url: baseUrl }]
+                ]
+              }
+            }
+          );
+          
+        } else if (data === 'search_invoices') {
+          await this.bot?.answerCallbackQuery(callbackQuery.id);
+          await this.bot?.sendMessage(chatId, 
+            `🔍 **Поиск счетов**\n\n` +
+            `Используйте команду: \`/search ваш_запрос\`\n\n` +
+            `Примеры поиска:\n` +
+            `• \`/search 100000\` - по сумме\n` +
+            `• \`/search ТОО\` - по названию покупателя\n` +
+            `• \`/search №123\` - по номеру счета`,
+            { parse_mode: 'Markdown' }
+          );
+          
+        } else if (data === 'show_stats') {
+          await this.showUserStats(chatId, user.id);
+          await this.bot?.answerCallbackQuery(callbackQuery.id);
+          
+        } else if (data === 'main_menu' || data === 'show_help') {
+          const mockMsg = { chat: { id: chatId }, from: { id: parseInt(telegramId) } };
+          const baseUrl = this.getBaseUrl();
+          
+          await this.bot?.answerCallbackQuery(callbackQuery.id);
+          await this.bot?.sendMessage(chatId, 
+            `🤖 **Генератор счетов РК**\n\n` +
+            `Добро пожаловать! Выберите действие:`,
+            { 
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: '📋 Мои счета', callback_data: 'list_invoices' },
+                    { text: '➕ Создать счет', callback_data: 'create_invoice' }
+                  ],
+                  [
+                    { text: '🔍 Поиск', callback_data: 'search_invoices' },
+                    { text: '📊 Статистика', callback_data: 'show_stats' }
+                  ],
+                  [
+                    { text: '🌐 Веб-приложение', url: baseUrl },
+                    { text: '❓ Помощь', callback_data: 'show_help' }
+                  ]
+                ]
+              }
+            }
+          );
+          
+        } else if (data.startsWith('download_pdf_')) {
           const invoiceId = data.replace('download_pdf_', '');
           await this.bot?.answerCallbackQuery(callbackQuery.id, {
             text: "Генерируем PDF файл..."
@@ -903,6 +1035,77 @@ ${invoice.totalAmountWords}
     } catch (error) {
       console.error('Error showing stats:', error);
       await this.bot?.sendMessage(chatId, "Произошла ошибка при загрузке статистики");
+    }
+  }
+
+  private async showUserStats(chatId: number, userId: string) {
+    try {
+      const invoices = await storage.getUserInvoices(userId);
+      
+      if (invoices.length === 0) {
+        await this.bot?.sendMessage(chatId, 
+          '📊 **Статистика**\n\n' +
+          'У вас пока нет созданных счетов.\n\n' +
+          'Создайте первый счет в веб-приложении!',
+          { 
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '➕ Создать счет', callback_data: 'create_invoice' }]
+              ]
+            }
+          }
+        );
+        return;
+      }
+
+      // Подсчет статистики
+      const totalAmount = invoices.reduce((sum, invoice) => sum + Number(invoice.totalAmount), 0);
+      const draftCount = invoices.filter(inv => inv.status === 'draft').length;
+      const sentCount = invoices.filter(inv => inv.status === 'sent').length;
+      const paidCount = invoices.filter(inv => inv.status === 'paid').length;
+      
+      // Статистика по месяцам
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const currentMonthInvoices = invoices.filter(inv => {
+        const invDate = new Date(inv.invoiceDate);
+        return invDate.getMonth() === currentMonth && invDate.getFullYear() === currentYear;
+      });
+      const currentMonthAmount = currentMonthInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+
+      await this.bot?.sendMessage(chatId, 
+        `📊 **Ваша статистика**\n\n` +
+        `**Общая информация:**\n` +
+        `📄 Всего счетов: ${invoices.length}\n` +
+        `💰 Общая сумма: ${totalAmount.toLocaleString('ru-RU')} ₸\n\n` +
+        `**По статусам:**\n` +
+        `📝 Черновики: ${draftCount}\n` +
+        `📤 Отправленные: ${sentCount}\n` +
+        `✅ Оплаченные: ${paidCount}\n\n` +
+        `**Текущий месяц:**\n` +
+        `📄 Счетов: ${currentMonthInvoices.length}\n` +
+        `💰 Сумма: ${currentMonthAmount.toLocaleString('ru-RU')} ₸`,
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '📋 Мои счета', callback_data: 'list_invoices' },
+                { text: '➕ Создать счет', callback_data: 'create_invoice' }
+              ],
+              [
+                { text: '🏠 Главное меню', callback_data: 'main_menu' }
+              ]
+            ]
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error showing user stats:', error);
+      await this.bot?.sendMessage(chatId, 
+        'Произошла ошибка при получении статистики. Попробуйте позже.'
+      );
     }
   }
 }
