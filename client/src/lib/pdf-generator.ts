@@ -135,53 +135,53 @@ export class PDFGenerator {
     pdf.line(x + col1Width, y, x + col1Width, y + rowHeight * 2);
     pdf.line(x + col1Width + col2Width, y, x + col1Width + col2Width, y + rowHeight * 2);
 
-    // Заполнение текстом - упрощенно без наложений
+    // Первая строка - Бенефициар
     pdf.setFont('PTSans', 'bold');
     pdf.setFontSize(8);
     pdf.text('Бенефициар:', x + 2, y + 3);
     
     pdf.setFont('PTSans', 'normal');
     pdf.setFontSize(7);
-    const supplierName = pdf.splitTextToSize(data.supplier.name, col1Width - 4);
-    pdf.text(supplierName, x + 2, y + 7);
-    pdf.text(`БИН: ${data.supplier.bin}`, x + 2, y + 13);
+    pdf.text(data.supplier.name, x + 2, y + 6);
+    pdf.text(`БИН: ${data.supplier.bin}`, x + 2, y + 9);
 
     // ИИК
     pdf.setFont('PTSans', 'bold');
     pdf.setFontSize(8);
     pdf.text('ИИК', x + col1Width + col2Width/2, y + 3, { align: 'center' });
     pdf.setFont('PTSans', 'normal');
-    pdf.text(data.supplier.iik, x + col1Width + col2Width/2, y + 8, { align: 'center' });
+    pdf.text(data.supplier.iik, x + col1Width + col2Width/2, y + 7, { align: 'center' });
 
     // КБе
     pdf.setFont('PTSans', 'bold');
     pdf.text('КБе', x + col1Width + col2Width + col3Width/2, y + 3, { align: 'center' });
     pdf.setFont('PTSans', 'normal');
-    pdf.text(data.supplier.kbe, x + col1Width + col2Width + col3Width/2, y + 8, { align: 'center' });
+    pdf.text(data.supplier.kbe, x + col1Width + col2Width + col3Width/2, y + 7, { align: 'center' });
 
-    // Банк бенефициара
+    // Вторая строка - Банк бенефициара
     pdf.setFont('PTSans', 'bold');
     pdf.setFontSize(8);
     pdf.text('Банк бенефициара:', x + 2, y + rowHeight + 3);
     
     pdf.setFont('PTSans', 'normal');
     pdf.setFontSize(7);
-    const bankName = pdf.splitTextToSize(data.supplier.bank, col1Width - 4);
-    pdf.text(bankName, x + 2, y + rowHeight + 7);
+    pdf.text(data.supplier.bank, x + 2, y + rowHeight + 6);
 
     // БИК
     pdf.setFont('PTSans', 'bold');
     pdf.setFontSize(8);
     pdf.text('БИК', x + col1Width + col2Width/2, y + rowHeight + 3, { align: 'center' });
     pdf.setFont('PTSans', 'normal');
-    pdf.text(data.supplier.bik, x + col1Width + col2Width/2, y + rowHeight + 8, { align: 'center' });
+    pdf.text(data.supplier.bik, x + col1Width + col2Width/2, y + rowHeight + 7, { align: 'center' });
 
     // Код назначения платежа
     pdf.setFont('PTSans', 'bold');
     pdf.setFontSize(7);
-    pdf.text('Код назначения платежа', x + col1Width + col2Width + col3Width/2, y + rowHeight + 3, { align: 'center' });
+    const codeText = 'Код назначения платежа';
+    const codeLines = pdf.splitTextToSize(codeText, col3Width - 4);
+    pdf.text(codeLines, x + col1Width + col2Width + col3Width/2, y + rowHeight + 2, { align: 'center' });
     pdf.setFont('PTSans', 'normal');
-    pdf.text(data.supplier.paymentCode, x + col1Width + col2Width + col3Width/2, y + rowHeight + 8, { align: 'center' });
+    pdf.text(data.supplier.paymentCode, x + col1Width + col2Width + col3Width/2, y + rowHeight + 7, { align: 'center' });
   }
 
   private static drawInvoiceTitle(pdf: jsPDF, data: InvoicePDFData, y: number) {
