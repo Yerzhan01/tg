@@ -164,19 +164,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Additional methods for compatibility
-  async getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]> {
-    const result = await db.query.invoices.findMany({
-      where: eq(invoices.userId, userId),
-      with: {
-        items: true,
-        supplier: true,
-        buyer: true
-      },
-      orderBy: [desc(invoices.createdAt)]
-    });
-    return result as InvoiceWithDetails[];
-  }
+
 
   // Clear data methods
   async clearAllUserData(userId: string): Promise<void> {

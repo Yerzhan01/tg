@@ -159,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Все ваши данные удалены" });
     } catch (error) {
       console.error('Error clearing user data:', error);
-      res.status(500).json({ message: "Failed to clear user data", error: error.message });
+      res.status(500).json({ message: "Failed to clear user data", error: (error as Error).message });
     }
   });
 
@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Вся база данных очищена" });
     } catch (error) {
       console.error('Error clearing all data:', error);
-      res.status(500).json({ message: "Failed to clear all data", error: error.message });
+      res.status(500).json({ message: "Failed to clear all data", error: (error as Error).message });
     }
   });
 
@@ -191,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('❌ ADMIN: Error resetting database:', error);
       res.status(500).json({ 
         message: "Ошибка сброса базы данных", 
-        error: error.message,
+        error: (error as Error).message,
         success: false
       });
     }
@@ -213,7 +213,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/suppliers", async (req, res) => {
     try {
+      console.log('POST /api/suppliers - Session userId:', req.session.userId);
+      console.log('POST /api/suppliers - Request body:', req.body);
+      
       if (!req.session.userId) {
+        console.log('POST /api/suppliers - No session userId found');
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -222,13 +226,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.session.userId
       });
 
+      console.log('POST /api/suppliers - Parsed supplier data:', supplierData);
       const supplier = await storage.createSupplier(supplierData);
+      console.log('POST /api/suppliers - Created supplier:', supplier);
+      
       res.json(supplier);
     } catch (error) {
+      console.error('POST /api/suppliers - Error:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid supplier data", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create supplier" });
+      res.status(500).json({ message: "Failed to create supplier", error: (error as Error).message });
     }
   });
 
@@ -265,7 +273,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/buyers", async (req, res) => {
     try {
+      console.log('POST /api/buyers - Session userId:', req.session.userId);
+      console.log('POST /api/buyers - Request body:', req.body);
+      
       if (!req.session.userId) {
+        console.log('POST /api/buyers - No session userId found');
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -274,13 +286,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.session.userId
       });
 
+      console.log('POST /api/buyers - Parsed buyer data:', buyerData);
       const buyer = await storage.createBuyer(buyerData);
+      console.log('POST /api/buyers - Created buyer:', buyer);
+      
       res.json(buyer);
     } catch (error) {
+      console.error('POST /api/buyers - Error:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid buyer data", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create buyer" });
+      res.status(500).json({ message: "Failed to create buyer", error: (error as Error).message });
     }
   });
 

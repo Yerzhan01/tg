@@ -62,6 +62,7 @@ export default function TelegramAuth({ onSuccess }: TelegramAuthProps) {
         script.setAttribute('data-size', 'large');
         script.setAttribute('data-onauth', 'TelegramLoginWidget.dataOnauth(user)');
         script.setAttribute('data-request-access', 'write');
+        script.setAttribute('data-auth-url', window.location.origin + '/api/auth/telegram');
         script.async = true;
 
         const container = document.getElementById('telegram-login-container');
