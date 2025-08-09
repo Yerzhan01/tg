@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { telegramStorage } from './telegram-storage';
 import { insertUserSchema, insertSupplierSchema, insertBuyerSchema, insertInvoiceSchema, insertSignatureSettingsSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -62,10 +63,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid Telegram authentication" });
       }
 
-      let user = await storage.getUserByTelegramId(telegramData.id.toString());
+      // Используем telegramStorage для пользователей (продакшн база)
+      let user = await telegramStorage.getUserByTelegramId(telegramData.id.toString());
       
       if (!user) {
-        user = await storage.createUser({
+        user = await telegramStorage.createUser({
           telegramId: telegramData.id.toString(),
           username: telegramData.username,
           firstName: telegramData.first_name,
@@ -74,7 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Update user data
-        user = await storage.updateUser(user.id, {
+        user = await telegramStorage.updateUser(user.id, {
           username: telegramData.username,
           firstName: telegramData.first_name,
           lastName: telegramData.last_name,
@@ -99,8 +101,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      // Find user by ID (simplified for memory storage)
-      const users = await storage.getSuppliersByUserId(req.session.userId); // Using suppliers query as proxy
+      // Проверяем существование пользователя в продакшн базе
+      const user = await telegramStorage.getUserById(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
       res.json({ userId: req.session.userId });
     } catch (error) {
       res.status(500).json({ message: "Failed to get user" });
@@ -154,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('Clearing data for user:', req.session.userId);
-      await storage.clearAllUserData(req.session.userId);
+      await telegramStorage.clearAllUserData(req.session.userId);
       console.log('Data cleared successfully for user:', req.session.userId);
       res.json({ message: "Все ваши данные удалены" });
     } catch (error) {
@@ -167,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clear-all-data", async (req, res) => {
     try {
       console.log('Clearing all database data...');
-      await storage.clearAllData();
+      await telegramStorage.clearAllData();
       console.log('All data cleared successfully');
       res.json({ message: "Вся база данных очищена" });
     } catch (error) {
@@ -180,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/reset-database", async (req, res) => {
     try {
       console.log('🚨 ADMIN: Resetting entire database...');
-      await storage.clearAllData();
+      await telegramStorage.clearAllData();
       console.log('✅ ADMIN: Database reset completed');
       res.json({ 
         message: "База данных полностью сброшена", 
@@ -204,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const suppliers = await storage.getSuppliersByUserId(req.session.userId);
+      const suppliers = await telegramStorage.getSuppliersByUserId(req.session.userId);
       res.json(suppliers);
     } catch (error) {
       res.status(500).json({ message: "Failed to get suppliers" });
@@ -227,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       console.log('POST /api/suppliers - Parsed supplier data:', supplierData);
-      const supplier = await storage.createSupplier(supplierData);
+      const supplier = await telegramStorage.createSupplier(supplierData);
       console.log('POST /api/suppliers - Created supplier:', supplier);
       
       res.json(supplier);
@@ -246,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const supplier = await storage.updateSupplier(req.params.id, req.body);
+      const supplier = await telegramStorage.updateSupplier(req.params.id, req.body);
       if (!supplier) {
         return res.status(404).json({ message: "Supplier not found" });
       }
@@ -264,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const buyers = await storage.getBuyersByUserId(req.session.userId);
+      const buyers = await telegramStorage.getBuyersByUserId(req.session.userId);
       res.json(buyers);
     } catch (error) {
       res.status(500).json({ message: "Failed to get buyers" });
@@ -287,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       console.log('POST /api/buyers - Parsed buyer data:', buyerData);
-      const buyer = await storage.createBuyer(buyerData);
+      const buyer = await telegramStorage.createBuyer(buyerData);
       console.log('POST /api/buyers - Created buyer:', buyer);
       
       res.json(buyer);
@@ -307,7 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const invoices = await storage.getInvoicesByUserId(req.session.userId);
+      const invoices = await telegramStorage.getInvoicesByUserId(req.session.userId);
       res.json(invoices);
     } catch (error) {
       res.status(500).json({ message: "Failed to get invoices" });
@@ -320,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const invoice = await storage.getInvoiceById(req.params.id);
+      const invoice = await telegramStorage.getInvoiceById(req.params.id);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
@@ -340,13 +345,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { supplier, buyer, items, ...invoiceFields } = req.body;
       
       // Create or find supplier
-      let supplierRecord = await storage.createSupplier({
+      let supplierRecord = await telegramStorage.createSupplier({
         ...supplier,
         userId: req.session.userId
       });
 
       // Create or find buyer
-      let buyerRecord = await storage.createBuyer({
+      let buyerRecord = await telegramStorage.createBuyer({
         ...buyer,
         userId: req.session.userId
       });
@@ -360,12 +365,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invoiceDate: new Date(invoiceFields.invoiceDate)
       };
 
-      const invoice = await storage.createInvoice(invoiceData);
+      const invoice = await telegramStorage.createInvoice(invoiceData);
       
       // Create invoice items
       if (items && items.length > 0) {
         for (const [index, item] of items.entries()) {
-          await storage.createInvoiceItem({
+          await telegramStorage.createInvoiceItem({
             ...item,
             invoiceId: invoice.id,
             sortOrder: index
@@ -374,12 +379,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return invoice with full details
-      const fullInvoice = await storage.getInvoiceById(invoice.id);
+      const fullInvoice = await telegramStorage.getInvoiceById(invoice.id);
       
       // Send Telegram notification for new invoice
       if (telegramBot) {
         try {
-          const user = await storage.getUserById(req.session.userId);
+          const user = await telegramStorage.getUserById(req.session.userId);
           if (user?.telegramId) {
             await telegramBot.notifyInvoiceCreated(user.telegramId, fullInvoice);
           }
@@ -406,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const item = await storage.createInvoiceItem({
+      const item = await telegramStorage.createInvoiceItem({
         ...req.body,
         invoiceId: req.params.invoiceId
       });
@@ -423,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const deleted = await storage.deleteInvoiceItem(req.params.id);
+      const deleted = await telegramStorage.deleteInvoiceItem(req.params.id);
       if (!deleted) {
         return res.status(404).json({ message: "Invoice item not found" });
       }
@@ -441,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const settings = await storage.getSignatureSettingsByUserId(req.session.userId);
+      const settings = await telegramStorage.getSignatureSettingsByUserId(req.session.userId);
       res.json(settings || {});
     } catch (error) {
       res.status(500).json({ message: "Failed to get signature settings" });
@@ -459,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.session.userId
       });
 
-      const settings = await storage.upsertSignatureSettings(settingsData);
+      const settings = await telegramStorage.upsertSignatureSettings(settingsData);
       res.json(settings);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -571,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get real invoice data from database
-      const invoiceRecord = await storage.getInvoiceById(invoiceId);
+      const invoiceRecord = await telegramStorage.getInvoiceById(invoiceId);
       if (!invoiceRecord) {
         return res.status(404).json({ message: 'Invoice not found' });
       }
@@ -611,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const originalInvoice = await storage.getInvoiceById(req.params.id);
+      const originalInvoice = await telegramStorage.getInvoiceById(req.params.id);
       if (!originalInvoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
@@ -629,11 +634,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'draft'
       });
 
-      const newInvoice = await storage.createInvoice(newInvoiceData);
+      const newInvoice = await telegramStorage.createInvoice(newInvoiceData);
       
       // Copy items
       for (const item of originalInvoice.items) {
-        await storage.createInvoiceItem({
+        await telegramStorage.createInvoiceItem({
           invoiceId: newInvoice.id,
           name: item.name,
           quantity: item.quantity,
@@ -657,13 +662,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const invoice = await storage.getInvoiceById(req.params.id);
+      const invoice = await telegramStorage.getInvoiceById(req.params.id);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
       // Get user's Telegram ID
-      const user = await storage.getUserByTelegramId(req.session.userId);
+      const user = await telegramStorage.getUserByTelegramId(req.session.userId);
       if (!user?.telegramId) {
         return res.status(400).json({ message: "Telegram account not linked" });
       }
@@ -691,7 +696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const requestUserId = isInternalRequest ? userId : req.session.userId;
       
-      const invoice = await storage.getInvoiceById(req.params.id);
+      const invoice = await telegramStorage.getInvoiceById(req.params.id);
       if (!invoice || invoice.userId !== requestUserId) {
         return res.status(404).json({ message: "Invoice not found" });
       }
@@ -740,7 +745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const requestUserId = isInternalRequest ? userId : req.session.userId;
       
-      const invoice = await storage.getInvoiceById(req.params.id);
+      const invoice = await telegramStorage.getInvoiceById(req.params.id);
       if (!invoice || invoice.userId !== requestUserId) {
         return res.status(404).json({ message: "Invoice not found" });
       }

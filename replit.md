@@ -6,10 +6,14 @@ This is a web application for generating official invoices (счета-факт�
 
 ## Recent Changes (August 2025)
 
-- **Database Separation**: Implemented separate databases for development/production environments. Telegram bot always uses production database while web app uses development database during development.
-- **Domain Configuration**: Updated all references to use kazinvoice.brnd.kz in production, automatic fallback to Replit domains in development.
-- **Telegram Bot Fixes**: Resolved "Bot domain invalid" errors and database connection issues.
-- **Environment Variables**: Added PRODUCTION_DATABASE_URL support for dual database configuration.
+- **Complete Database Separation**: Fixed all database routing issues:
+  - **User Authentication**: Now uses production database (telegramStorage) for all user registration/login
+  - **Telegram Bot**: Always uses production database for all operations
+  - **Web App Data**: Uses development database for suppliers, buyers, invoices during development
+  - **Consistent User Experience**: Users registered via Telegram auth go to production DB, preventing data loss
+- **Domain Configuration**: Updated all Telegram bot references to use kazinvoice.brnd.kz exclusively
+- **Production Readiness**: Environment automatically switches to production database for all operations when deployed
+- **Error Resolution**: Fixed all LSP errors and database connection issues
 
 ## User Preferences
 
