@@ -232,8 +232,8 @@ export class PDFGenerator {
   }
   
   private static drawServicesTable(pdf: jsPDF, data: InvoicePDFData, y: number): number {
-    // Рисуем таблицу вручную с точными размерами колонок
-    const colWidths = [12, 15, 82, 15, 20, 32, 34];
+    // Правильные размеры колонок как в HTML примере
+    const colWidths = [30, 80, 60, 60, 50, 90, 90]; // Увеличиваем ширины для лучшего отображения
     let colX = this.L.MARGIN;
     const colXPositions: number[] = [];
     
@@ -294,19 +294,19 @@ export class PDFGenerator {
       currentY += rowHeight;
     });
     
-    // Строка "Итого"
+    // Строка "Итого" - объединяем первые 6 колонок как colspan="6"
     pdf.setFont('PTSans', 'bold');
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(9);
     
-    // Объединяем первые 6 колонок
+    // Объединенная ячейка для "Итого:" (первые 6 колонок)
     const totalColWidth = colWidths.slice(0, 6).reduce((sum, width) => sum + width, 0);
     pdf.rect(colXPositions[0], currentY, totalColWidth, rowHeight, 'D');
-    pdf.text('Итого:', colXPositions[0] + totalColWidth - 2, currentY + 5, { align: 'right' });
+    pdf.text('Итого:', colXPositions[0] + totalColWidth - 5, currentY + 5, { align: 'right' });
     
-    // Последняя колонка с суммой
+    // Отдельная ячейка для суммы (7-я колонка)
     pdf.rect(colXPositions[6], currentY, colWidths[6], rowHeight, 'D');
-    pdf.text(this.formatMoney(data.totalAmount), colXPositions[6] + colWidths[6] - 2, currentY + 5, { align: 'right' });
+    pdf.text(this.formatMoney(data.totalAmount), colXPositions[6] + colWidths[6] - 5, currentY + 5, { align: 'right' });
     
     return currentY + rowHeight;
   }
