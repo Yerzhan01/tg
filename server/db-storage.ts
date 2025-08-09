@@ -4,7 +4,7 @@ import type { User, InsertUser, Supplier, InsertSupplier, Buyer, InsertBuyer,
          Invoice, InsertInvoice, InvoiceItem, InsertInvoiceItem, SignatureSettings, 
          InsertSignatureSettings, InvoiceWithDetails } from "@shared/schema";
 import type { IStorage } from "./storage";
-import { eq } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   // Users
@@ -162,5 +162,54 @@ export class DatabaseStorage implements IStorage {
       const result = await db.insert(signatureSettings).values(settings).returning();
       return result[0];
     }
+  }
+
+  // Additional methods for compatibility
+  async getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]> {
+    return await db.query.invoices.findMany({
+      where: eq(invoices.userId, userId),
+      with: {
+        items: true,
+        supplier: true,
+        buyer: true
+      },
+      orderBy: [desc(invoices.createdAt)]
+    });
+  }
+
+  // Clear data methods
+  async clearAllUserData(userId: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete invoice items first (due to foreign key constraints)
+      await tx.delete(invoiceItems).where(
+        inArray(invoiceItems.invoiceId, 
+          tx.select({ id: invoices.id }).from(invoices).where(eq(invoices.userId, userId))
+        )
+      );
+      
+      // Delete invoices
+      await tx.delete(invoices).where(eq(invoices.userId, userId));
+      
+      // Delete suppliers
+      await tx.delete(suppliers).where(eq(suppliers.userId, userId));
+      
+      // Delete buyers
+      await tx.delete(buyers).where(eq(buyers.userId, userId));
+      
+      // Delete signature settings
+      await tx.delete(signatureSettings).where(eq(signatureSettings.userId, userId));
+    });
+  }
+
+  async clearAllData(): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete in correct order due to foreign key constraints
+      await tx.delete(invoiceItems);
+      await tx.delete(invoices);
+      await tx.delete(suppliers);
+      await tx.delete(buyers);
+      await tx.delete(signatureSettings);
+      // Don't delete users to preserve authentication
+    });
   }
 }
