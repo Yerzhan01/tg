@@ -166,7 +166,7 @@ export class DatabaseStorage implements IStorage {
 
   // Additional methods for compatibility
   async getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]> {
-    return await db.query.invoices.findMany({
+    const result = await db.query.invoices.findMany({
       where: eq(invoices.userId, userId),
       with: {
         items: true,
@@ -175,41 +175,39 @@ export class DatabaseStorage implements IStorage {
       },
       orderBy: [desc(invoices.createdAt)]
     });
+    return result as InvoiceWithDetails[];
   }
 
   // Clear data methods
   async clearAllUserData(userId: string): Promise<void> {
-    await db.transaction(async (tx) => {
-      // Delete invoice items first (due to foreign key constraints)
-      await tx.delete(invoiceItems).where(
-        inArray(invoiceItems.invoiceId, 
-          tx.select({ id: invoices.id }).from(invoices).where(eq(invoices.userId, userId))
-        )
-      );
-      
-      // Delete invoices
-      await tx.delete(invoices).where(eq(invoices.userId, userId));
-      
-      // Delete suppliers
-      await tx.delete(suppliers).where(eq(suppliers.userId, userId));
-      
-      // Delete buyers
-      await tx.delete(buyers).where(eq(buyers.userId, userId));
-      
-      // Delete signature settings
-      await tx.delete(signatureSettings).where(eq(signatureSettings.userId, userId));
-    });
+    // Delete invoice items first (due to foreign key constraints)
+    const userInvoices = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.userId, userId));
+    const invoiceIds = userInvoices.map(inv => inv.id);
+    
+    if (invoiceIds.length > 0) {
+      await db.delete(invoiceItems).where(inArray(invoiceItems.invoiceId, invoiceIds));
+    }
+    
+    // Delete invoices
+    await db.delete(invoices).where(eq(invoices.userId, userId));
+    
+    // Delete suppliers
+    await db.delete(suppliers).where(eq(suppliers.userId, userId));
+    
+    // Delete buyers
+    await db.delete(buyers).where(eq(buyers.userId, userId));
+    
+    // Delete signature settings
+    await db.delete(signatureSettings).where(eq(signatureSettings.userId, userId));
   }
 
   async clearAllData(): Promise<void> {
-    await db.transaction(async (tx) => {
-      // Delete in correct order due to foreign key constraints
-      await tx.delete(invoiceItems);
-      await tx.delete(invoices);
-      await tx.delete(suppliers);
-      await tx.delete(buyers);
-      await tx.delete(signatureSettings);
-      // Don't delete users to preserve authentication
-    });
+    // Delete in correct order due to foreign key constraints
+    await db.delete(invoiceItems);
+    await db.delete(invoices);
+    await db.delete(suppliers);
+    await db.delete(buyers);
+    await db.delete(signatureSettings);
+    // Don't delete users to preserve authentication
   }
 }

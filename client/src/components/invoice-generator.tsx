@@ -102,24 +102,20 @@ export default function InvoiceGenerator() {
   const queryClient = useQueryClient();
 
   // Загрузка сохраненных поставщиков
-  const { data: suppliers = [] } = useQuery({
+  const { data: suppliers = [] } = useQuery<any[]>({
     queryKey: ['/api/suppliers'],
     enabled: !!user
   });
 
   // Загрузка сохраненных покупателей
-  const { data: buyers = [] } = useQuery({
+  const { data: buyers = [] } = useQuery<any[]>({
     queryKey: ['/api/buyers'], 
     enabled: !!user
   });
 
   // Сохранение поставщика
   const saveSupplierMutation = useMutation({
-    mutationFn: (supplier: any) => apiRequest('/api/suppliers', {
-      method: 'POST',
-      body: JSON.stringify(supplier),
-      headers: { 'Content-Type': 'application/json' }
-    }),
+    mutationFn: (supplier: any) => apiRequest('/api/suppliers', 'POST', supplier),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
       toast({ title: "Поставщик сохранен", description: "Данные поставщика сохранены в базу данных" });
@@ -131,11 +127,7 @@ export default function InvoiceGenerator() {
 
   // Сохранение покупателя
   const saveBuyerMutation = useMutation({
-    mutationFn: (buyer: any) => apiRequest('/api/buyers', {
-      method: 'POST', 
-      body: JSON.stringify(buyer),
-      headers: { 'Content-Type': 'application/json' }
-    }),
+    mutationFn: (buyer: any) => apiRequest('/api/buyers', 'POST', buyer),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/buyers'] });
       toast({ title: "Покупатель сохранен", description: "Данные покупателя сохранены в базу данных" });
@@ -772,7 +764,7 @@ export default function InvoiceGenerator() {
               {buyers.length > 0 && (
                 <Select
                   onValueChange={(buyerId) => {
-                    const buyer = buyers.find(b => b.id === buyerId);
+                    const buyer = buyers.find((b: any) => b.id === buyerId);
                     if (buyer) {
                       setInvoiceData(prev => ({
                         ...prev,
@@ -790,7 +782,7 @@ export default function InvoiceGenerator() {
                     <SelectValue placeholder="Выбрать из сохраненных" />
                   </SelectTrigger>
                   <SelectContent>
-                    {buyers.map((buyer) => (
+                    {buyers.map((buyer: any) => (
                       <SelectItem key={buyer.id} value={buyer.id}>
                         {buyer.name}
                       </SelectItem>
@@ -962,7 +954,7 @@ export default function InvoiceGenerator() {
             {suppliers.length > 0 && (
               <Select
                 onValueChange={(supplierId) => {
-                  const supplier = suppliers.find(s => s.id === supplierId);
+                  const supplier = suppliers.find((s: any) => s.id === supplierId);
                   if (supplier) {
                     setInvoiceData(prev => ({
                       ...prev,
@@ -985,7 +977,7 @@ export default function InvoiceGenerator() {
                   <SelectValue placeholder="Выбрать из сохраненных" />
                 </SelectTrigger>
                 <SelectContent>
-                  {suppliers.map((supplier) => (
+                  {suppliers.map((supplier: any) => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
                     </SelectItem>
