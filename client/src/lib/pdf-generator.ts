@@ -82,10 +82,10 @@ export class PDFGenerator {
     currentY += 15;
 
     this.drawPaymentTable(pdf, data, this.L.MARGIN, currentY);
-    currentY += 25;
+    currentY += 30;
 
     this.drawInvoiceTitle(pdf, data, currentY);
-    currentY += 12;
+    currentY += 15;
 
     currentY = this.drawPartiesInfo(pdf, data, currentY);
     currentY += 5;
@@ -217,11 +217,11 @@ export class PDFGenerator {
     const rowHeight = 8;
     let currentY = y;
     
-    // Заголовок таблицы
-    pdf.setFillColor(230, 230, 230);
+    // Заголовок таблицы - светло-серый фон как в образце
+    pdf.setFillColor(240, 240, 240);
     pdf.setTextColor(0, 0, 0);
     pdf.setFont('PTSans', 'bold');
-    pdf.setFontSize(this.L.FONT_SIZE.S);
+    pdf.setFontSize(9);
     
     const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
     
@@ -236,6 +236,7 @@ export class PDFGenerator {
     pdf.setFillColor(255, 255, 255);
     pdf.setTextColor(0, 0, 0);
     pdf.setFont('PTSans', 'normal');
+    pdf.setFontSize(9);
     
     data.services.forEach((service, index) => {
       const rowData = [
