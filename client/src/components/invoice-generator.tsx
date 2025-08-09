@@ -54,6 +54,12 @@ interface InvoiceData {
 export default function InvoiceGenerator() {
   const [currentMode, setCurrentMode] = useState<Mode>('edit');
   const [invoiceStatus, setInvoiceStatus] = useState<'draft' | 'sent' | 'paid'>('draft');
+  
+  // Данные пользователя
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/me']
+  });
+  
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: '2',
     invoiceDate: new Date().toISOString().split('T')[0],
@@ -103,6 +109,50 @@ export default function InvoiceGenerator() {
   const { toast } = useToast();
   const [showTemplates, setShowTemplates] = useState(false);
   const queryClient = useQueryClient();
+
+  // Загрузка сохраненных поставщиков
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['/api/suppliers'],
+    enabled: !!user
+  });
+
+  // Загрузка сохраненных покупателей
+  const { data: buyers = [] } = useQuery({
+    queryKey: ['/api/buyers'], 
+    enabled: !!user
+  });
+
+  // Сохранение поставщика
+  const saveSupplierMutation = useMutation({
+    mutationFn: (supplier: any) => apiRequest('/api/suppliers', {
+      method: 'POST',
+      body: JSON.stringify(supplier),
+      headers: { 'Content-Type': 'application/json' }
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+      toast({ title: "Поставщик сохранен", description: "Данные поставщика сохранены в базу данных" });
+    },
+    onError: () => {
+      toast({ title: "Ошибка", description: "Не удалось сохранить поставщика", variant: "destructive" });
+    }
+  });
+
+  // Сохранение покупателя
+  const saveBuyerMutation = useMutation({
+    mutationFn: (buyer: any) => apiRequest('/api/buyers', {
+      method: 'POST', 
+      body: JSON.stringify(buyer),
+      headers: { 'Content-Type': 'application/json' }
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/buyers'] });
+      toast({ title: "Покупатель сохранен", description: "Данные покупателя сохранены в базу данных" });
+    },
+    onError: () => {
+      toast({ title: "Ошибка", description: "Не удалось сохранить покупателя", variant: "destructive" });
+    }
+  });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -693,10 +743,51 @@ export default function InvoiceGenerator() {
 
         {/* Buyer Information */}
         <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Building className="w-5 h-5 mr-2" />
-            Данные покупателя
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <Building className="w-5 h-5 mr-2" />
+              Данные покупателя
+            </h3>
+            <div className="flex gap-2">
+              {buyers.length > 0 && (
+                <Select
+                  onValueChange={(buyerId) => {
+                    const buyer = buyers.find(b => b.id === buyerId);
+                    if (buyer) {
+                      setInvoiceData(prev => ({
+                        ...prev,
+                        buyer: {
+                          name: buyer.name,
+                          bin: buyer.bin,
+                          address: buyer.address
+                        }
+                      }));
+                      toast({ title: "Данные загружены", description: "Данные покупателя загружены" });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Выбрать из сохраненных" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {buyers.map((buyer) => (
+                      <SelectItem key={buyer.id} value={buyer.id}>
+                        {buyer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => saveBuyerMutation.mutate(invoiceData.buyer)}
+                disabled={saveBuyerMutation.isPending}
+              >
+                {saveBuyerMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+              </Button>
+            </div>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -842,9 +933,55 @@ export default function InvoiceGenerator() {
   const renderSupplierMode = () => (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center text-secondary">
-          <Building className="w-6 h-6 mr-2" />
-          Данные поставщика
+        <CardTitle className="flex items-center justify-between text-secondary">
+          <div className="flex items-center">
+            <Building className="w-6 h-6 mr-2" />
+            Данные поставщика
+          </div>
+          <div className="flex gap-2">
+            {suppliers.length > 0 && (
+              <Select
+                onValueChange={(supplierId) => {
+                  const supplier = suppliers.find(s => s.id === supplierId);
+                  if (supplier) {
+                    setInvoiceData(prev => ({
+                      ...prev,
+                      supplier: {
+                        name: supplier.name,
+                        bin: supplier.bin,
+                        address: supplier.address,
+                        bank: supplier.bank,
+                        bik: supplier.bik,
+                        iik: supplier.iik,
+                        kbe: supplier.kbe || '',
+                        paymentCode: supplier.paymentCode || ''
+                      }
+                    }));
+                    toast({ title: "Данные загружены", description: "Данные поставщика загружены" });
+                  }
+                }}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Выбрать из сохраненных" />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => saveSupplierMutation.mutate(invoiceData.supplier)}
+              disabled={saveSupplierMutation.isPending}
+            >
+              {saveSupplierMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+            </Button>
+          </div>
         </CardTitle>
         <p className="text-gray-600">Укажите информацию о вашей организации</p>
       </CardHeader>
