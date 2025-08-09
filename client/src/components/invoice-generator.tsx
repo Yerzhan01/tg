@@ -61,34 +61,25 @@ export default function InvoiceGenerator() {
   });
   
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
-    invoiceNumber: '2',
+    invoiceNumber: '',
     invoiceDate: new Date().toISOString().split('T')[0],
-    contract: 'Без договора',
+    contract: '',
     supplier: {
-      name: 'Индивидуальный предприниматель Sonar Group',
-      bin: '960517300238',
-      address: 'г. Шымкент, ул. Микрорайон 8 д. 10 кв. (офис)',
-      bank: 'АО "Народный Банк Казахстана"',
-      bik: 'HSBKKZKX',
-      iik: 'KZ53601A291000781231',
-      kbe: '19',
-      paymentCode: '859'
+      name: '',
+      bin: '',
+      address: '',
+      bank: '',
+      bik: '',
+      iik: '',
+      kbe: '',
+      paymentCode: ''
     },
     buyer: {
-      name: 'ТОО "White Label"',
-      bin: '211240012284',
-      address: 'Казахстан, Алматы. Хаджимукана 22/6'
+      name: '',
+      bin: '',
+      address: ''
     },
-    services: [
-      {
-        id: 1,
-        name: 'Интеграция чат ботов',
-        quantity: 1.0,
-        unit: 'Услуга',
-        price: 300000,
-        total: 300000
-      }
-    ]
+    services: []
   });
 
   const [signature, setSignature] = useState<string | null>(null);
