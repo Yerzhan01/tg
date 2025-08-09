@@ -1,14 +1,20 @@
 import { db } from "./db";
 import { users, suppliers, buyers, invoices, invoiceItems, signatureSettings } from "@shared/schema";
-import type { IStorage, User, InsertUser, Supplier, InsertSupplier, Buyer, InsertBuyer, 
+import type { User, InsertUser, Supplier, InsertSupplier, Buyer, InsertBuyer, 
          Invoice, InsertInvoice, InvoiceItem, InsertInvoiceItem, SignatureSettings, 
          InsertSignatureSettings, InvoiceWithDetails } from "@shared/schema";
+import type { IStorage } from "./storage";
 import { eq } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   // Users
   async getUserByTelegramId(telegramId: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.telegramId, telegramId)).limit(1);
+    return result[0];
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0];
   }
 

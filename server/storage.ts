@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 export interface IStorage {
   // Users
   getUserByTelegramId(telegramId: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<User>): Promise<User | undefined>;
 
@@ -52,6 +53,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(user => user.telegramId === telegramId);
   }
 
+  async getUserById(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { 
@@ -87,9 +92,11 @@ export class MemStorage implements IStorage {
   async createSupplier(insertSupplier: InsertSupplier): Promise<Supplier> {
     const id = randomUUID();
     const supplier: Supplier = { 
-      ...insertSupplier, 
+      ...insertSupplier,
       id, 
-      createdAt: new Date() 
+      createdAt: new Date(),
+      kbe: insertSupplier.kbe ?? null,
+      paymentCode: insertSupplier.paymentCode ?? null
     };
     this.suppliers.set(id, supplier);
     return supplier;
@@ -181,10 +188,14 @@ export class MemStorage implements IStorage {
   async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
     const id = randomUUID();
     const invoice: Invoice = { 
-      ...insertInvoice, 
+      ...insertInvoice,
       id, 
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      contract: insertInvoice.contract ?? null,
+      pdfUrl: insertInvoice.pdfUrl ?? null,
+      excelUrl: insertInvoice.excelUrl ?? null,
+      status: insertInvoice.status ?? null
     };
     this.invoices.set(id, invoice);
     return invoice;
@@ -208,7 +219,11 @@ export class MemStorage implements IStorage {
 
   async createInvoiceItem(insertItem: InsertInvoiceItem): Promise<InvoiceItem> {
     const id = randomUUID();
-    const item: InvoiceItem = { ...insertItem, id };
+    const item: InvoiceItem = { 
+      ...insertItem, 
+      id,
+      sortOrder: insertItem.sortOrder ?? null
+    };
     this.invoiceItems.set(id, item);
     return item;
   }
@@ -243,7 +258,14 @@ export class MemStorage implements IStorage {
       const settings: SignatureSettings = { 
         ...insertSettings, 
         id, 
-        updatedAt: new Date() 
+        updatedAt: new Date(),
+        signatureUrl: insertSettings.signatureUrl ?? null,
+        signatureWidth: insertSettings.signatureWidth ?? null,
+        signatureHeight: insertSettings.signatureHeight ?? null,
+        signaturePosition: insertSettings.signaturePosition ?? null,
+        stampUrl: insertSettings.stampUrl ?? null,
+        stampSize: insertSettings.stampSize ?? null,
+        stampPosition: insertSettings.stampPosition ?? null
       };
       this.signatureSettings.set(id, settings);
       return settings;

@@ -665,7 +665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       invoice.items?.forEach((item, index) => {
         worksheetData.push([
-          index + 1,
+          (index + 1).toString(),
           item.name,
           item.quantity,
           item.unit,
