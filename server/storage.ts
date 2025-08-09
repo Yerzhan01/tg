@@ -212,6 +212,40 @@ export class MemStorage implements IStorage {
     return this.getInvoicesWithDetailsByUserId(userId);
   }
 
+  // Clear all data methods
+  async clearAllUserData(userId: string): Promise<void> {
+    // Remove all invoices for user
+    const userInvoices = Array.from(this.invoices.values()).filter(inv => inv.userId === userId);
+    for (const invoice of userInvoices) {
+      this.invoices.delete(invoice.id);
+      // Remove invoice items
+      const invoiceItems = Array.from(this.invoiceItems.values()).filter(item => item.invoiceId === invoice.id);
+      for (const item of invoiceItems) {
+        this.invoiceItems.delete(item.id);
+      }
+    }
+
+    // Remove suppliers
+    const userSuppliers = Array.from(this.suppliers.values()).filter(s => s.userId === userId);
+    for (const supplier of userSuppliers) {
+      this.suppliers.delete(supplier.id);
+    }
+
+    // Remove buyers
+    const userBuyers = Array.from(this.buyers.values()).filter(b => b.userId === userId);
+    for (const buyer of userBuyers) {
+      this.buyers.delete(buyer.id);
+    }
+  }
+
+  async clearAllData(): Promise<void> {
+    this.invoices.clear();
+    this.invoiceItems.clear();
+    this.suppliers.clear(); 
+    this.buyers.clear();
+    // Don't clear users to keep authentication
+  }
+
   async getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]> {
     const invoices = Array.from(this.invoices.values()).filter(invoice => invoice.userId === userId);
     const result: InvoiceWithDetails[] = [];

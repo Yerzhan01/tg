@@ -12,7 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 import { 
   FileText, MessageCircle, LogOut, Edit3, Building, PenTool, Eye, 
-  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List, Download, Layers
+  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List, Download, Layers, Minus, ShoppingCart
 } from "lucide-react";
 import { convertNumberToKazakhWords } from "@/lib/number-converter";
 import { validateBinIin, validateIik, validateBik, validateRequiredField, validateAmount } from "@/lib/validation";
@@ -699,6 +699,35 @@ export default function InvoiceGenerator() {
         <Eye className="w-5 h-5 mr-3 text-success" />
         Предварительный просмотр
       </Button>
+      
+      <div className="border-t pt-2 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
+          onClick={async () => {
+            if (confirm('Вы уверены, что хотите удалить все свои данные? Это действие нельзя отменить.')) {
+              try {
+                const response = await fetch('/api/clear-my-data', { 
+                  method: 'POST',
+                  credentials: 'include'
+                });
+                if (response.ok) {
+                  toast({ title: "Данные удалены", description: "Все ваши данные успешно удалены" });
+                  window.location.reload();
+                } else {
+                  toast({ title: "Ошибка", description: "Не удалось удалить данные", variant: "destructive" });
+                }
+              } catch (error) {
+                toast({ title: "Ошибка", description: "Произошла ошибка при удалении данных", variant: "destructive" });
+              }
+            }
+          }}
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Очистить все данные
+        </Button>
+      </div>
     </nav>
   );
 

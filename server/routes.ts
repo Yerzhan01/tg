@@ -146,6 +146,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear user data endpoint
+  app.post("/api/clear-my-data", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      await storage.clearAllUserData(req.session.userId);
+      res.json({ message: "Все ваши данные удалены" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear user data" });
+    }
+  });
+
+  // Clear all data endpoint (admin only)
+  app.post("/api/clear-all-data", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      await storage.clearAllData();
+      res.json({ message: "Вся база данных очищена" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear all data" });
+    }
+  });
+
   // Suppliers
   app.get("/api/suppliers", async (req, res) => {
     try {
