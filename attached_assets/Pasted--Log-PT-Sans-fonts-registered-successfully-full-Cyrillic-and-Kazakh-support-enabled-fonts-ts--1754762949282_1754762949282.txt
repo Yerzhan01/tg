@@ -1,0 +1,90 @@
+[Log] ✅ PT Sans fonts registered successfully - full Cyrillic and Kazakh support enabled (fonts.ts, line 9)
+[Error] Failed to download PDF: – TypeError: pdf.autoTable is not a function. (In 'pdf.autoTable({
+      head,
+      body,
+      startY,
+      theme: "grid",
+      styles: {
+        font: "PTSans",
+        fontSize: this.L.FONT_SIZE.S,
+        lineWidth: 0.2,
+        lineColor: [0, 0, 0]
+      },
+      headStyles: {
+        fillColor: [230, 230, 230],
+        textColor: [0, 0, 0],
+        fontStyle: "bold",
+        halign: "center"
+      },
+      columnStyles: {
+        0: { halign: "center", cellWidth: 12 },
+        // № - 12mm
+        1: { halign: "center", cellWidth: 15 },
+        // Код - 15mm
+        2: { halign: "left", cellWidth: 82 },
+        // Наименование - 82mm
+        3: { halign: "right", cellWidth: 15 },
+        // Кол-во - 15mm
+        4: { halign: "center", cellWidth: 20 },
+        // Ед. - 20mm
+        5: { halign: "right", cellWidth: 32 },
+        // Цена - 32mm (с отступом 3mm справа)
+        6: { halign: "right", cellWidth: 34 }
+        // Сумма - 34mm (с отступом 3mm справа)
+      },
+      foot: [
+        [
+          { content: "Итого:", colSpan: 6, styles: { halign: "right", fontStyle: "bold" } },
+          { content: this.formatMoney(data.totalAmount), styles: { halign: "right", fontStyle: "bold" } }
+        ]
+      ],
+      footStyles: {
+        fillColor: [255, 255, 255],
+        fontStyle: "bold"
+      }
+    })', 'pdf.autoTable' is undefined) — https://bc700157-2325-4ed8-89d2-b630caa0879c-00-35…xmccgk.picard.replit.dev/src/lib/pdf-generator.ts:136
+TypeError: pdf.autoTable is not a function. (In 'pdf.autoTable({
+      head,
+      body,
+      startY,
+      theme: "grid",
+      styles: {
+        font: "PTSans",
+        fontSize: this.L.FONT_SIZE.S,
+        lineWidth: 0.2,
+        lineColor: [0, 0, 0]
+      },
+      headStyles: {
+        fillColor: [230, 230, 230],
+        textColor: [0, 0, 0],
+        fontStyle: "bold",
+        halign: "center"
+      },
+      columnStyles: {
+        0: { halign: "center", cellWidth: 12 },
+        // № - 12mm
+        1: { halign: "center", cellWidth: 15 },
+        // Код - 15mm
+        2: { halign: "left", cellWidth: 82 },
+        // Наименование - 82mm
+        3: { halign: "right", cellWidth: 15 },
+        // Кол-во - 15mm
+        4: { halign: "center", cellWidth: 20 },
+        // Ед. - 20mm
+        5: { halign: "right", cellWidth: 32 },
+        // Цена - 32mm (с отступом 3mm справа)
+        6: { halign: "right", cellWidth: 34 }
+        // Сумма - 34mm (с отступом 3mm справа)
+      },
+      foot: [
+        [
+          { content: "Итого:", colSpan: 6, styles: { halign: "right", fontStyle: "bold" } },
+          { content: this.formatMoney(data.totalAmount), styles: { halign: "right", fontStyle: "bold" } }
+        ]
+      ],
+      footStyles: {
+        fillColor: [255, 255, 255],
+        fontStyle: "bold"
+      }
+    })', 'pdf.autoTable' is undefined) — https://bc700157-2325-4ed8-89d2-b630caa0879c-00-35…xmccgk.picard.replit.dev/src/lib/pdf-generator.ts:136drawServicesTable — pdf-generator.ts:220(анонимная функция) — pdf-generator.ts:93generateInvoicePDF — pdf-generator.ts:64(анонимная функция) — invoice-generator.tsx:363downloadPDF — invoice-generator.tsx:331callCallback2 — react-dom.development.js:4164dispatchEventinvokeGuardedCallbackDev — react-dom.development.js:4213invokeGuardedCallback — react-dom.development.js:4277invokeGuardedCallbackAndCatchFirstError — react-dom.development.js:4291executeDispatch — react-dom.development.js:9041processDispatchQueueItemsInOrder — react-dom.development.js:9073processDispatchQueue — react-dom.development.js:9086dispatchEventsForPlugins — react-dom.development.js:9097batchedUpdates$1 — react-dom.development.js:26179batchedUpdates — react-dom.development.js:3991dispatchEventForPluginEventSystem — react-dom.development.js:9287dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay — react-dom.development.js:6465dispatchEvent — react-dom.development.js:6457:85dispatchDiscreteEvent — react-dom.development.js:6430
+	(анонимная функция) (invoice-generator.tsx:335)

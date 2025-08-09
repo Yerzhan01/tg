@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { registerPTSansFont } from './fonts';
 import { convertNumberToKazakhWords } from './number-converter';
 
@@ -203,59 +203,80 @@ export class PDFGenerator {
   }
   
   private static drawServicesTable(pdf: jsPDF, data: InvoicePDFData, y: number): number {
-    // Используем jsPDF-AutoTable для надежной отрисовки таблицы
-    const startY = y;
+    // Рисуем таблицу вручную с точными размерами колонок
+    const colWidths = [12, 15, 82, 15, 20, 32, 34];
+    let colX = this.L.MARGIN;
+    const colXPositions: number[] = [];
     
-    const head = [['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма']];
-    const body = data.services.map((s, i) => [
-      (i + 1).toString(),
-      '', // Код пустой
-      s.name,
-      s.quantity.toFixed(2),
-      s.unit,
-      this.formatMoney(s.price),
-      this.formatMoney(s.total)
-    ]);
-    
-    pdf.autoTable({
-        head: head,
-        body: body,
-        startY: startY,
-        theme: 'grid',
-        styles: {
-            font: 'PTSans',
-            fontSize: this.L.FONT_SIZE.S,
-            lineWidth: 0.2,
-            lineColor: [0, 0, 0],
-        },
-        headStyles: {
-            fillColor: [230, 230, 230],
-            textColor: [0, 0, 0],
-            fontStyle: 'bold',
-            halign: 'center',
-        },
-        columnStyles: {
-            0: { halign: 'center', cellWidth: 12 }, // № - 12mm
-            1: { halign: 'center', cellWidth: 15 }, // Код - 15mm
-            2: { halign: 'left', cellWidth: 82 },   // Наименование - 82mm
-            3: { halign: 'right', cellWidth: 15 },  // Кол-во - 15mm
-            4: { halign: 'center', cellWidth: 20 }, // Ед. - 20mm
-            5: { halign: 'right', cellWidth: 32 },  // Цена - 32mm (с отступом 3mm справа)
-            6: { halign: 'right', cellWidth: 34 },  // Сумма - 34mm (с отступом 3mm справа)
-        },
-        foot: [
-            [
-              { content: 'Итого:', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
-              { content: this.formatMoney(data.totalAmount), styles: { halign: 'right', fontStyle: 'bold' } }
-            ]
-        ],
-        footStyles: {
-            fillColor: [255, 255, 255],
-            fontStyle: 'bold',
-        }
+    // Вычисляем позиции колонок
+    colWidths.forEach((width) => {
+      colXPositions.push(colX);
+      colX += width;
     });
-
-    return pdf.lastAutoTable.finalY;
+    
+    const rowHeight = 8;
+    let currentY = y;
+    
+    // Заголовок таблицы
+    pdf.setFillColor(230, 230, 230);
+    pdf.setFont('PTSans', 'bold');
+    pdf.setFontSize(this.L.FONT_SIZE.S);
+    
+    const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
+    
+    headers.forEach((header, index) => {
+      pdf.rect(colXPositions[index], currentY, colWidths[index], rowHeight, 'FD');
+      pdf.text(header, colXPositions[index] + colWidths[index]/2, currentY + 5, { align: 'center' });
+    });
+    
+    currentY += rowHeight;
+    
+    // Строки данных
+    pdf.setFillColor(255, 255, 255);
+    pdf.setFont('PTSans', 'normal');
+    
+    data.services.forEach((service, index) => {
+      const rowData = [
+        (index + 1).toString(),
+        '',
+        service.name,
+        service.quantity.toString(),
+        service.unit,
+        this.formatMoney(service.price),
+        this.formatMoney(service.total)
+      ];
+      
+      const aligns: ('center' | 'left' | 'right')[] = ['center', 'center', 'left', 'right', 'center', 'right', 'right'];
+      
+      rowData.forEach((cellData, colIndex) => {
+        pdf.rect(colXPositions[colIndex], currentY, colWidths[colIndex], rowHeight, 'S');
+        
+        let textX = colXPositions[colIndex] + 2;
+        if (aligns[colIndex] === 'center') {
+          textX = colXPositions[colIndex] + colWidths[colIndex]/2;
+        } else if (aligns[colIndex] === 'right') {
+          textX = colXPositions[colIndex] + colWidths[colIndex] - 2;
+        }
+        
+        pdf.text(cellData, textX, currentY + 5, { align: aligns[colIndex] });
+      });
+      
+      currentY += rowHeight;
+    });
+    
+    // Строка "Итого"
+    pdf.setFont('PTSans', 'bold');
+    
+    // Объединяем первые 6 колонок
+    const totalColWidth = colWidths.slice(0, 6).reduce((sum, width) => sum + width, 0);
+    pdf.rect(colXPositions[0], currentY, totalColWidth, rowHeight, 'S');
+    pdf.text('Итого:', colXPositions[0] + totalColWidth - 2, currentY + 5, { align: 'right' });
+    
+    // Последняя колонка с суммой
+    pdf.rect(colXPositions[6], currentY, colWidths[6], rowHeight, 'S');
+    pdf.text(this.formatMoney(data.totalAmount), colXPositions[6] + colWidths[6] - 2, currentY + 5, { align: 'right' });
+    
+    return currentY + rowHeight;
   }
 
   private static drawTotalInfo(pdf: jsPDF, data: InvoicePDFData, y: number): number {
