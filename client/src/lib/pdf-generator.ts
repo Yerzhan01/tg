@@ -219,6 +219,7 @@ export class PDFGenerator {
     
     // Заголовок таблицы
     pdf.setFillColor(230, 230, 230);
+    pdf.setTextColor(0, 0, 0);
     pdf.setFont('PTSans', 'bold');
     pdf.setFontSize(this.L.FONT_SIZE.S);
     
@@ -233,6 +234,7 @@ export class PDFGenerator {
     
     // Строки данных
     pdf.setFillColor(255, 255, 255);
+    pdf.setTextColor(0, 0, 0);
     pdf.setFont('PTSans', 'normal');
     
     data.services.forEach((service, index) => {
@@ -249,7 +251,7 @@ export class PDFGenerator {
       const aligns: ('center' | 'left' | 'right')[] = ['center', 'center', 'left', 'right', 'center', 'right', 'right'];
       
       rowData.forEach((cellData, colIndex) => {
-        pdf.rect(colXPositions[colIndex], currentY, colWidths[colIndex], rowHeight, 'S');
+        pdf.rect(colXPositions[colIndex], currentY, colWidths[colIndex], rowHeight, 'D');
         
         let textX = colXPositions[colIndex] + 2;
         if (aligns[colIndex] === 'center') {
@@ -266,14 +268,15 @@ export class PDFGenerator {
     
     // Строка "Итого"
     pdf.setFont('PTSans', 'bold');
+    pdf.setTextColor(0, 0, 0);
     
     // Объединяем первые 6 колонок
     const totalColWidth = colWidths.slice(0, 6).reduce((sum, width) => sum + width, 0);
-    pdf.rect(colXPositions[0], currentY, totalColWidth, rowHeight, 'S');
+    pdf.rect(colXPositions[0], currentY, totalColWidth, rowHeight, 'D');
     pdf.text('Итого:', colXPositions[0] + totalColWidth - 2, currentY + 5, { align: 'right' });
     
     // Последняя колонка с суммой
-    pdf.rect(colXPositions[6], currentY, colWidths[6], rowHeight, 'S');
+    pdf.rect(colXPositions[6], currentY, colWidths[6], rowHeight, 'D');
     pdf.text(this.formatMoney(data.totalAmount), colXPositions[6] + colWidths[6] - 2, currentY + 5, { align: 'right' });
     
     return currentY + rowHeight;
