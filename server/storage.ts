@@ -90,6 +90,18 @@ export class MemStorage implements IStorage {
   }
 
   async createSupplier(insertSupplier: InsertSupplier): Promise<Supplier> {
+    // Проверяем, существует ли уже такой поставщик
+    const existingSupplier = Array.from(this.suppliers.values()).find(supplier => 
+      supplier.userId === insertSupplier.userId &&
+      supplier.name === insertSupplier.name &&
+      supplier.bin === insertSupplier.bin &&
+      supplier.iik === insertSupplier.iik
+    );
+
+    if (existingSupplier) {
+      return existingSupplier;
+    }
+
     const id = randomUUID();
     const supplier: Supplier = { 
       ...insertSupplier,
@@ -121,6 +133,18 @@ export class MemStorage implements IStorage {
   }
 
   async createBuyer(insertBuyer: InsertBuyer): Promise<Buyer> {
+    // Проверяем, существует ли уже такой покупатель
+    const existingBuyer = Array.from(this.buyers.values()).find(buyer => 
+      buyer.userId === insertBuyer.userId &&
+      buyer.name === insertBuyer.name &&
+      buyer.bin === insertBuyer.bin &&
+      buyer.address === insertBuyer.address
+    );
+
+    if (existingBuyer) {
+      return existingBuyer;
+    }
+
     const id = randomUUID();
     const buyer: Buyer = { 
       ...insertBuyer, 
@@ -140,9 +164,52 @@ export class MemStorage implements IStorage {
     return updatedBuyer;
   }
 
+  // Utility methods for cleaning duplicates
+  async cleanDuplicateSuppliers(userId: string): Promise<number> {
+    const userSuppliers = Array.from(this.suppliers.values()).filter(s => s.userId === userId);
+    const unique = new Map<string, Supplier>();
+    let removedCount = 0;
+
+    for (const supplier of userSuppliers) {
+      const key = `${supplier.name}-${supplier.bin}-${supplier.iik}`;
+      if (!unique.has(key)) {
+        unique.set(key, supplier);
+      } else {
+        // Удаляем дубликат
+        this.suppliers.delete(supplier.id);
+        removedCount++;
+      }
+    }
+
+    return removedCount;
+  }
+
+  async cleanDuplicateBuyers(userId: string): Promise<number> {
+    const userBuyers = Array.from(this.buyers.values()).filter(b => b.userId === userId);
+    const unique = new Map<string, Buyer>();
+    let removedCount = 0;
+
+    for (const buyer of userBuyers) {
+      const key = `${buyer.name}-${buyer.bin}-${buyer.address}`;
+      if (!unique.has(key)) {
+        unique.set(key, buyer);
+      } else {
+        // Удаляем дубликат
+        this.buyers.delete(buyer.id);
+        removedCount++;
+      }
+    }
+
+    return removedCount;
+  }
+
   // Invoices
   async getInvoicesByUserId(userId: string): Promise<Invoice[]> {
     return Array.from(this.invoices.values()).filter(invoice => invoice.userId === userId);
+  }
+
+  async getUserInvoices(userId: string): Promise<InvoiceWithDetails[]> {
+    return this.getInvoicesWithDetailsByUserId(userId);
   }
 
   async getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]> {

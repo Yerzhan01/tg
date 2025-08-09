@@ -117,6 +117,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Clean duplicates endpoint
+  app.post("/api/clean-duplicates", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const removedSuppliers = await storage.cleanDuplicateSuppliers(req.session.userId);
+      const removedBuyers = await storage.cleanDuplicateBuyers(req.session.userId);
+
+      res.json({ 
+        message: "Дубликаты удалены", 
+        removedSuppliers, 
+        removedBuyers 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clean duplicates" });
+    }
+  });
+
   // Suppliers
   app.get("/api/suppliers", async (req, res) => {
     try {
