@@ -17,14 +17,8 @@ class InvoiceTelegramBot {
   }
 
   private getBaseUrl(): string {
-    if (process.env.NODE_ENV === 'production') {
-      return 'https://kazinvoice.brnd.kz';
-    }
-    
-    const devDomain = process.env.REPLIT_DEV_DOMAIN || 
-                     process.env.REPLIT_DOMAIN || 
-                     `${process.env.REPL_SLUG}--${process.env.REPL_OWNER}.replit.app`;
-    return `https://${devDomain}`;
+    // Всегда используем основной домен для Telegram бота
+    return 'https://kazinvoice.brnd.kz';
   }
 
   private async setupWebhook() {

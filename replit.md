@@ -4,6 +4,13 @@
 
 This is a web application for generating official invoices (счета-фактуры) compliant with Kazakhstan legislation. The system provides a comprehensive solution for individual entrepreneurs and small businesses to quickly create, manage, and distribute professional invoices. The application features Telegram integration for authentication and bot notifications, comprehensive invoice management with PDF/Excel export capabilities, and a modern React-based user interface.
 
+## Recent Changes (August 2025)
+
+- **Database Separation**: Implemented separate databases for development/production environments. Telegram bot always uses production database while web app uses development database during development.
+- **Domain Configuration**: Updated all references to use kazinvoice.brnd.kz in production, automatic fallback to Replit domains in development.
+- **Telegram Bot Fixes**: Resolved "Bot domain invalid" errors and database connection issues.
+- **Environment Variables**: Added PRODUCTION_DATABASE_URL support for dual database configuration.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

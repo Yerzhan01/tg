@@ -37,7 +37,7 @@ export class DatabaseStorage implements IStorage {
 
   // Suppliers
   async getSuppliersByUserId(userId: string): Promise<Supplier[]> {
-    return db.select().from(suppliers).where(eq(suppliers.userId, userId));
+    return this.db.select().from(suppliers).where(eq(suppliers.userId, userId));
   }
 
   async getSupplierById(id: string): Promise<Supplier | undefined> {
@@ -57,7 +57,7 @@ export class DatabaseStorage implements IStorage {
 
   // Buyers
   async getBuyersByUserId(userId: string): Promise<Buyer[]> {
-    return db.select().from(buyers).where(eq(buyers.userId, userId));
+    return this.db.select().from(buyers).where(eq(buyers.userId, userId));
   }
 
   async getBuyerById(id: string): Promise<Buyer | undefined> {
@@ -77,7 +77,7 @@ export class DatabaseStorage implements IStorage {
 
   // Invoices
   async getInvoicesByUserId(userId: string): Promise<Invoice[]> {
-    return db.select().from(invoices).where(eq(invoices.userId, userId));
+    return this.db.select().from(invoices).where(eq(invoices.userId, userId));
   }
 
   async getInvoicesWithDetailsByUserId(userId: string): Promise<InvoiceWithDetails[]> {
@@ -132,7 +132,7 @@ export class DatabaseStorage implements IStorage {
 
   // Invoice Items
   async getInvoiceItemsByInvoiceId(invoiceId: string): Promise<InvoiceItem[]> {
-    return db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
+    return this.db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
   }
 
   async createInvoiceItem(item: InsertInvoiceItem): Promise<InvoiceItem> {
