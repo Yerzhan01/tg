@@ -1,5 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { storage } from './storage';
+import { telegramStorage } from './telegram-storage';
 import { InvoiceWithDetails } from '@shared/schema';
 import crypto from 'crypto';
 
@@ -75,7 +75,7 @@ class InvoiceTelegramBot {
 
       if (!telegramId) return;
 
-      const user = await storage.getUserByTelegramId(telegramId);
+      const user = await telegramStorage.getUserByTelegramId(telegramId);
       
       if (user) {
         await this.bot?.sendMessage(chatId, 
@@ -125,7 +125,7 @@ class InvoiceTelegramBot {
       }
 
       try {
-        const user = await storage.getUserByTelegramId(telegramId);
+        const user = await telegramStorage.getUserByTelegramId(telegramId);
         console.log('User lookup result:', user ? `Found user ${user.id}` : 'User not found');
         
         if (!user) {
@@ -134,7 +134,7 @@ class InvoiceTelegramBot {
         }
 
         // Временно используем getInvoicesByUserId и для каждого счета получаем полные данные
-        const basicInvoices = await storage.getInvoicesByUserId(user.id);
+        const basicInvoices = await telegramStorage.getInvoicesByUserId(user.id);
         console.log('Found invoices:', basicInvoices.length);
         
         if (basicInvoices.length === 0) {
@@ -149,7 +149,7 @@ class InvoiceTelegramBot {
         // Show detailed list with buttons for few invoices
         for (const basicInvoice of basicInvoices) {
           // Получаем полные данные для каждого счета
-          const invoice = await storage.getInvoiceById(basicInvoice.id);
+          const invoice = await telegramStorage.getInvoiceById(basicInvoice.id);
           if (!invoice) continue;
 
           const message = `🧾 Счет №${invoice.invoiceNumber}\n` +
@@ -205,7 +205,7 @@ class InvoiceTelegramBot {
 
       if (!telegramId) return;
 
-      const user = await storage.getUserByTelegramId(telegramId);
+      const user = await telegramStorage.getUserByTelegramId(telegramId);
       if (!user) {
         await this.bot?.sendMessage(chatId, 
           '⚠️ Вы не зарегистрированы. Используйте команду /start для регистрации.');
@@ -254,7 +254,7 @@ class InvoiceTelegramBot {
       
       if (!telegramId) return;
       
-      const user = await storage.getUserByTelegramId(telegramId);
+      const user = await telegramStorage.getUserByTelegramId(telegramId);
       if (!user) return;
 
       switch (msg.text) {
@@ -360,7 +360,7 @@ class InvoiceTelegramBot {
 
       if (!chatId || !data) return;
 
-      const user = await storage.getUserByTelegramId(telegramId);
+      const user = await telegramStorage.getUserByTelegramId(telegramId);
       if (!user) {
         await this.bot?.answerCallbackQuery(callbackQuery.id, {
           text: "Пожалуйста, авторизуйтесь на веб-платформе"
@@ -624,7 +624,7 @@ ${invoice.totalAmountWords}
       await this.bot?.sendMessage(chatId, "⏳ Генерация PDF файла...");
       
       // Get invoice data
-      const invoice = await storage.getInvoiceById(invoiceId);
+      const invoice = await telegramStorage.getInvoiceById(invoiceId);
       if (!invoice || invoice.userId !== userId) {
         await this.bot?.sendMessage(chatId, "❌ Счет не найден или у вас нет доступа к нему");
         return;
@@ -669,7 +669,7 @@ ${invoice.totalAmountWords}
       await this.bot?.sendMessage(chatId, "⏳ Генерация Excel файла...");
       
       // Get invoice data
-      const invoice = await storage.getInvoiceById(invoiceId);
+      const invoice = await telegramStorage.getInvoiceById(invoiceId);
       if (!invoice || invoice.userId !== userId) {
         await this.bot?.sendMessage(chatId, "❌ Счет не найден или у вас нет доступа к нему");
         return;
@@ -717,19 +717,19 @@ ${invoice.totalAmountWords}
 
     if (!telegramId) return;
 
-    const user = await storage.getUserByTelegramId(telegramId);
+    const user = await telegramStorage.getUserByTelegramId(telegramId);
     if (!user) {
       await this.bot?.sendMessage(chatId, "🔑 Пожалуйста, авторизуйтесь на веб-платформе");
       return;
     }
 
     try {
-      const allInvoices = await storage.getInvoicesByUserId(user.id);
+      const allInvoices = await telegramStorage.getInvoicesByUserId(user.id);
       
       // Поиск по номеру счета, названию поставщика или покупателя
       const searchResults = [];
       for (const basicInvoice of allInvoices) {
-        const invoice = await storage.getInvoiceById(basicInvoice.id);
+        const invoice = await telegramStorage.getInvoiceById(basicInvoice.id);
         if (!invoice) continue;
 
         const searchText = query.toLowerCase();
@@ -774,14 +774,14 @@ ${invoice.totalAmountWords}
 
     if (!telegramId) return;
 
-    const user = await storage.getUserByTelegramId(telegramId);
+    const user = await telegramStorage.getUserByTelegramId(telegramId);
     if (!user) {
       await this.bot?.sendMessage(chatId, "🔑 Пожалуйста, авторизуйтесь на веб-платформе");
       return;
     }
 
     try {
-      const allInvoices = await storage.getInvoicesByUserId(user.id);
+      const allInvoices = await telegramStorage.getInvoicesByUserId(user.id);
       
       const stats = {
         total: allInvoices.length,
@@ -840,7 +840,7 @@ ${invoice.totalAmountWords}
 
   private async sendInvoiceDetails(chatId: number, invoiceId: string, userId: string) {
     try {
-      const invoice = await storage.getInvoiceById(invoiceId);
+      const invoice = await telegramStorage.getInvoiceById(invoiceId);
       if (!invoice || invoice.userId !== userId) {
         await this.bot?.sendMessage(chatId, "❌ Счет не найден");
         return;
@@ -877,7 +877,7 @@ ${invoice.totalAmountWords}
 
   private async sendStatusChangeOptions(chatId: number, invoiceId: string, userId: string) {
     try {
-      const invoice = await storage.getInvoiceById(invoiceId);
+      const invoice = await telegramStorage.getInvoiceById(invoiceId);
       if (!invoice || invoice.userId !== userId) {
         await this.bot?.sendMessage(chatId, "❌ Счет не найден");
         return;
@@ -909,14 +909,14 @@ ${invoice.totalAmountWords}
 
   private async changeInvoiceStatus(chatId: number, invoiceId: string, newStatus: string, userId: string) {
     try {
-      const invoice = await storage.getInvoiceById(invoiceId);
+      const invoice = await telegramStorage.getInvoiceById(invoiceId);
       if (!invoice || invoice.userId !== userId) {
         await this.bot?.sendMessage(chatId, "❌ Счет не найден");
         return;
       }
 
       // Обновляем статус счета
-      await storage.updateInvoice(invoiceId, { status: newStatus });
+      await telegramStorage.updateInvoice(invoiceId, { status: newStatus });
 
       const message = `✅ Статус счета №${invoice.invoiceNumber} изменен на:\n` +
         `${this.getStatusEmoji(newStatus)} ${this.getStatusText(newStatus)}`;
@@ -1001,7 +1001,7 @@ ${invoice.totalAmountWords}
   // Helper method to show invoices list (same as /invoices command)
   private async showInvoicesList(chatId: number, userId: string) {
     try {
-      const basicInvoices = await storage.getInvoicesByUserId(userId);
+      const basicInvoices = await telegramStorage.getInvoicesByUserId(userId);
       
       if (basicInvoices.length === 0) {
         await this.bot?.sendMessage(chatId, "У вас пока нет созданных счетов");
@@ -1012,7 +1012,7 @@ ${invoice.totalAmountWords}
       const invoicesToShow = basicInvoices.slice(0, 10); // Показываем максимум 10 счетов с кнопками
       
       for (const basicInvoice of invoicesToShow) {
-        const invoice = await storage.getInvoiceById(basicInvoice.id);
+        const invoice = await telegramStorage.getInvoiceById(basicInvoice.id);
         if (!invoice) continue;
 
         const message = `🧾 <b>Счет №${invoice.invoiceNumber}</b>\n` +
@@ -1079,7 +1079,7 @@ ${invoice.totalAmountWords}
   // Helper method to show statistics
   private async showStats(chatId: number, userId: string) {
     try {
-      const invoices = await storage.getInvoicesByUserId(userId);
+      const invoices = await telegramStorage.getInvoicesByUserId(userId);
       
       if (invoices.length === 0) {
         await this.bot?.sendMessage(chatId, "У вас пока нет созданных счетов для статистики");
@@ -1110,7 +1110,7 @@ ${invoice.totalAmountWords}
 
   private async showUserStats(chatId: number, userId: string) {
     try {
-      const invoices = await storage.getInvoicesWithDetailsByUserId(userId);
+      const invoices = await telegramStorage.getInvoicesWithDetailsByUserId(userId);
       
       if (invoices.length === 0) {
         await this.bot?.sendMessage(chatId, 
