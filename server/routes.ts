@@ -124,8 +124,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const removedSuppliers = await storage.cleanDuplicateSuppliers(req.session.userId);
-      const removedBuyers = await storage.cleanDuplicateBuyers(req.session.userId);
+      // Проверяем тип storage и вызываем методы только если они существуют
+      let removedSuppliers = 0;
+      let removedBuyers = 0;
+
+      if ('cleanDuplicateSuppliers' in storage) {
+        removedSuppliers = await (storage as any).cleanDuplicateSuppliers(req.session.userId);
+      }
+      
+      if ('cleanDuplicateBuyers' in storage) {
+        removedBuyers = await (storage as any).cleanDuplicateBuyers(req.session.userId);
+      }
 
       res.json({ 
         message: "Дубликаты удалены", 

@@ -74,27 +74,24 @@ class InvoiceTelegramBot {
         await this.bot?.sendMessage(chatId, 
           `🤖 Добро пожаловать в генератор счетов РК! 📄\n\n` +
           `Ваш аккаунт уже связан с веб-платформой.\n\n` +
-          `Доступные команды:\n` +
-          `/invoices - Список ваших счетов\n` +
-          `/create - Создать новый счет\n` +
-          `/search <запрос> - Поиск счетов\n` +
-          `/stats - Статистика\n` +
-          `/help - Помощь`,
+          `Используйте кнопки ниже или команды из меню для работы с системой.`,
           {
             reply_markup: {
-              inline_keyboard: [
+              keyboard: [
                 [
-                  { text: '📋 Мои счета', callback_data: 'list_invoices' },
-                  { text: '➕ Создать счет', callback_data: 'create_invoice' }
+                  { text: '📋 Мои счета' },
+                  { text: '➕ Создать счет' }
                 ],
                 [
-                  { text: '🔍 Поиск', callback_data: 'search_invoices' },
-                  { text: '📊 Статистика', callback_data: 'show_stats' }
+                  { text: '🔍 Поиск' },
+                  { text: '📊 Статистика' }
                 ],
                 [
-                  { text: '❓ Помощь', callback_data: 'show_help' }
+                  { text: '❓ Помощь' }
                 ]
-              ]
+              ],
+              resize_keyboard: true,
+              persistent: true
             }
           }
         );
@@ -239,6 +236,72 @@ class InvoiceTelegramBot {
     // Команда /stats - статистика по счетам
     this.bot.onText(/\/stats/, async (msg) => {
       await this.handleStatsCommand(msg);
+    });
+
+    // Обработка текстовых сообщений с кнопок постоянной клавиатуры
+    this.bot.on('message', async (msg) => {
+      if (!msg.text || msg.text.startsWith('/')) return;
+      
+      const chatId = msg.chat.id;
+      const telegramId = msg.from?.id.toString();
+      
+      if (!telegramId) return;
+      
+      const user = await storage.getUserByTelegramId(telegramId);
+      if (!user) return;
+
+      switch (msg.text) {
+        case '📋 Мои счета':
+          await this.showInvoicesList(chatId, user.id);
+          break;
+        case '➕ Создать счет':
+          const baseUrl = this.getBaseUrl();
+          await this.bot?.sendMessage(chatId, 
+            `➕ **Создать новый счет**\n\nПерейдите в веб-приложение:`,
+            { 
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🌐 Открыть веб-приложение', url: baseUrl }]
+                ]
+              }
+            }
+          );
+          break;
+        case '🔍 Поиск':
+          await this.bot?.sendMessage(chatId, 
+            `🔍 **Поиск счетов**\n\n` +
+            `Используйте команду: \`/search ваш_запрос\`\n\n` +
+            `Примеры:\n` +
+            `• \`/search 100000\` - по сумме\n` +
+            `• \`/search ТОО\` - по названию\n` +
+            `• \`/search №123\` - по номеру`,
+            { parse_mode: 'Markdown' }
+          );
+          break;
+        case '📊 Статистика':
+          await this.showUserStats(chatId, user.id);
+          break;
+        case '❓ Помощь':
+          await this.bot?.sendMessage(chatId,
+            `❓ **Помощь по боту**\n\n` +
+            `**Основные возможности:**\n` +
+            `• 📋 Просмотр списка ваших счетов\n` +
+            `• 📄 Получение готовых PDF и Excel файлов\n` +
+            `• 🔍 Поиск и статистика по счетам\n` +
+            `• 📊 Управление статусами счетов\n` +
+            `• 🔔 Уведомления о новых счетах\n\n` +
+            `**Команды:**\n` +
+            `🚀 /start - Начать работу\n` +
+            `📋 /invoices - Список счетов\n` +
+            `➕ /create - Создать новый счет\n` +
+            `🔍 /search <запрос> - Поиск счетов\n` +
+            `📊 /stats - Статистика по счетам\n` +
+            `❓ /help - Эта справка`,
+            { parse_mode: 'Markdown' }
+          );
+          break;
+      }
     });
 
     // Команда /settings - настройки уведомлений
@@ -1040,7 +1103,7 @@ ${invoice.totalAmountWords}
 
   private async showUserStats(chatId: number, userId: string) {
     try {
-      const invoices = await storage.getUserInvoices(userId);
+      const invoices = await storage.getInvoicesWithDetailsByUserId(userId);
       
       if (invoices.length === 0) {
         await this.bot?.sendMessage(chatId, 
