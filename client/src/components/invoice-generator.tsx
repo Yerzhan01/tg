@@ -869,7 +869,8 @@ export default function InvoiceGenerator() {
           </div>
           
           <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+            {/* Desktop header */}
+            <div className="hidden lg:block bg-gray-50 px-6 py-3 border-b border-gray-200">
               <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-700">
                 <div className="col-span-1">№</div>
                 <div className="col-span-3">Наименование</div>
@@ -882,8 +883,86 @@ export default function InvoiceGenerator() {
             </div>
             
             {invoiceData.services.map((service, index) => (
-              <div key={service.id} className="px-6 py-4 border-b border-gray-200 last:border-b-0">
-                <div className="grid grid-cols-12 gap-2 items-center">
+              <div key={service.id} className="p-4 lg:px-6 lg:py-4 border-b border-gray-200 last:border-b-0">
+                {/* Mobile layout */}
+                <div className="block lg:hidden space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600">Услуга #{index + 1}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeService(index)}
+                      className="text-red-500 hover:text-red-700 p-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block">Название</Label>
+                      <Input
+                        value={service.name}
+                        onChange={(e) => updateService(index, 'name', e.target.value)}
+                        className="text-sm"
+                        placeholder="Название услуги"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-gray-500 mb-1 block">Количество</Label>
+                        <Input
+                          type="number"
+                          value={service.quantity}
+                          onChange={(e) => updateService(index, 'quantity', parseFloat(e.target.value) || 0)}
+                          step="0.1"
+                          className="text-sm"
+                          placeholder="1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500 mb-1 block">Единица</Label>
+                        <Select
+                          value={service.unit}
+                          onValueChange={(value) => updateService(index, 'unit', value)}
+                        >
+                          <SelectTrigger className="text-sm h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Услуга">Услуга</SelectItem>
+                            <SelectItem value="шт">шт</SelectItem>
+                            <SelectItem value="кг">кг</SelectItem>
+                            <SelectItem value="м">м</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block">Цена</Label>
+                      <Input
+                        type="number"
+                        value={service.price}
+                        onChange={(e) => updateService(index, 'price', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                        step="0.01"
+                        className="text-sm"
+                        placeholder="Цена"
+                      />
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Сумма:</span>
+                        <span className="text-sm font-medium">{(service.quantity * (typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price)).toLocaleString('ru-RU')} ₸</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Desktop layout */}
+                <div className="hidden lg:grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-1 text-sm text-gray-600">{index + 1}</div>
                   <div className="col-span-3">
                     <Input

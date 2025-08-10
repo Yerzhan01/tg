@@ -2,6 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile optimization styles */
+@layer components {
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .mobile-card {
+    @apply rounded-lg sm:rounded-xl;
+  }
+  
+  .mobile-button {
+    @apply w-full h-10 sm:h-9 text-sm;
+  }
+  
+  .mobile-input {
+    @apply h-10 sm:h-9 text-sm;
+  }
+  
+  .mobile-select {
+    @apply h-10 sm:h-9 text-sm;
+  }
+  
+  .mobile-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+  
+  .mobile-stack {
+    @apply flex flex-col space-y-3 sm:space-y-4;
+  }
+  
+  .mobile-responsive-text {
+    @apply text-sm sm:text-base;
+  }
+  
+  .mobile-padding {
+    @apply p-4 sm:p-6;
+  }
+  
+  .mobile-gap {
+    @apply gap-3 sm:gap-4;
+  }
+}
+
+/* Ensure proper touch targets on mobile */
+@media (max-width: 640px) {
+  button, 
+  input[type="button"], 
+  input[type="submit"],
+  .select-trigger {
+    min-height: 44px;
+  }
+  
+  /* Make sure form inputs are easy to tap */
+  input, 
+  textarea, 
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Improve table scrolling on mobile */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Better spacing for mobile cards */
+  .card-mobile {
+    margin-bottom: 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Mobile-friendly navigation */
+  .mobile-nav {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  /* Responsive text sizes */
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1.125rem; }
+  h3 { font-size: 1rem; }
+  
+  /* Better modal display on mobile */
+  .modal-content {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);
