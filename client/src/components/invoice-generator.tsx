@@ -652,47 +652,48 @@ export default function InvoiceGenerator() {
   );
 
   const renderModeButtons = () => (
-    <nav className="mobile-form space-y-3">
+    <nav className="p-4 space-y-2">
       <Button
         variant={currentMode === 'edit' ? 'default' : 'ghost'}
-        className={`w-full h-12 justify-start text-left font-medium ${currentMode === 'edit' ? 'btn-primary' : ''}`}
+        className={`w-full justify-start ${currentMode === 'edit' ? 'btn-primary' : ''}`}
         onClick={() => setCurrentMode('edit')}
       >
-        <Edit3 className="w-5 h-5 mr-3 flex-shrink-0" />
-        <span>Редактирование</span>
+        <Edit3 className="w-5 h-5 mr-3" />
+        Редактирование
       </Button>
       
       <Button
         variant={currentMode === 'supplier' ? 'default' : 'ghost'}
-        className={`w-full h-12 justify-start text-left font-medium ${currentMode === 'supplier' ? 'btn-secondary' : ''}`}
+        className={`w-full justify-start ${currentMode === 'supplier' ? 'btn-secondary' : ''}`}
         onClick={() => setCurrentMode('supplier')}
       >
-        <Building className="w-5 h-5 mr-3 text-secondary flex-shrink-0" />
-        <span>Мои данные</span>
+        <Building className="w-5 h-5 mr-3 text-secondary" />
+        Мои данные
       </Button>
       
       <Button
         variant={currentMode === 'signature' ? 'default' : 'ghost'}
-        className={`w-full h-12 justify-start text-left font-medium ${currentMode === 'signature' ? 'btn-accent' : ''}`}
+        className={`w-full justify-start ${currentMode === 'signature' ? 'btn-accent' : ''}`}
         onClick={() => setCurrentMode('signature')}
       >
-        <PenTool className="w-5 h-5 mr-3 text-accent flex-shrink-0" />
-        <span>Подпись и печать</span>
+        <PenTool className="w-5 h-5 mr-3 text-accent" />
+        Подпись и печать
       </Button>
       
       <Button
         variant={currentMode === 'preview' ? 'default' : 'ghost'}
-        className={`w-full h-12 justify-start text-left font-medium ${currentMode === 'preview' ? 'btn-success' : ''}`}
+        className={`w-full justify-start ${currentMode === 'preview' ? 'btn-success' : ''}`}
         onClick={() => setCurrentMode('preview')}
       >
-        <Eye className="w-5 h-5 mr-3 text-success flex-shrink-0" />
-        <span>Предварительный просмотр</span>
+        <Eye className="w-5 h-5 mr-3 text-success" />
+        Предварительный просмотр
       </Button>
       
-      <div className="border-t pt-4 mt-6">
+      <div className="border-t pt-2 mt-4">
         <Button
           variant="outline"
-          className="w-full h-11 justify-start text-left text-red-600 border-red-200 hover:bg-red-50 font-medium"
+          size="sm"
+          className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
           onClick={async () => {
             if (confirm('Вы уверены, что хотите удалить все свои данные? Это действие нельзя отменить.')) {
               try {
@@ -712,8 +713,8 @@ export default function InvoiceGenerator() {
             }
           }}
         >
-          <Trash2 className="w-4 h-4 mr-3 flex-shrink-0" />
-          <span>Очистить все данные</span>
+          <Trash2 className="w-4 h-4 mr-2" />
+          Очистить все данные
         </Button>
       </div>
     </nav>
@@ -1616,32 +1617,30 @@ export default function InvoiceGenerator() {
       </header>
 
       {/* Main Content */}
-      <div className="mobile-container max-w-7xl mx-auto py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-8 mobile-responsive-layout">
+      <div className="max-w-7xl mx-auto py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-8">
           
           {/* Sidebar */}
           <div className="lg:col-span-1 no-print">
-            <Card className="mobile-card shadow-sm">
-              <CardHeader className="pb-2 sm:pb-6 px-4 sm:px-6">
+            <Card className="mobile-card">
+              <CardHeader className="pb-2 sm:pb-6">
                 <CardTitle className="text-base sm:text-lg">Управление</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="mobile-button-group p-4 sm:p-6">
-                  {renderModeButtons()}
-                </div>
+                {renderModeButtons()}
                 
-                <div className="p-4 sm:p-4 border-t border-gray-200">
-                  <div className="bg-blue-50 rounded-lg p-4 mobile-card">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <Bot className="w-5 h-5 text-primary" />
-                      <span className="text-sm font-medium text-primary">Telegram Bot</span>
+                <div className="p-3 sm:p-4 border-t border-gray-200">
+                  <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                      <span className="text-xs sm:text-sm font-medium text-primary">Telegram Bot</span>
                     </div>
-                    <p className="text-sm text-blue-700 mb-4 leading-relaxed">
+                    <p className="text-xs text-blue-700 mb-3">
                       Генерируйте счета прямо из Telegram и получайте готовые файлы
                     </p>
                     <Button
                       onClick={() => setShowTelegramBotModal(true)}
-                      className="w-full h-12 btn-primary text-sm font-medium"
+                      className="mobile-button btn-primary text-xs sm:text-sm py-2"
                     >
                       Открыть бот
                     </Button>

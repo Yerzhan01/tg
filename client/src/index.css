@@ -45,206 +45,42 @@
   }
 }
 
-/* Enhanced mobile optimization */
-@media (max-width: 768px) {
-  /* Force proper viewport behavior */
-  html {
-    -webkit-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
-  }
-  
-  body {
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
+/* Mobile optimization - only for screens smaller than 640px */
+@media (max-width: 640px) {
   /* Ensure proper touch targets on mobile */
   button, 
   input[type="button"], 
   input[type="submit"],
-  [role="button"],
-  .select-trigger,
   .mobile-button {
-    min-height: 48px !important;
-    min-width: 48px;
-    padding: 12px 16px;
-    font-size: 16px;
-    touch-action: manipulation;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
   }
   
-  /* Make sure form inputs are easy to tap and prevent zoom */
+  /* Make sure form inputs are easy to tap */
   input, 
   textarea, 
   select {
-    min-height: 48px !important;
-    font-size: 16px !important; /* Prevents zoom on iOS */
-    padding: 12px 16px;
-    border-radius: 8px;
-    touch-action: manipulation;
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
   }
   
   /* Improve table scrolling on mobile */
   .table-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    margin: 0 -1rem;
-    padding: 0 1rem;
   }
   
-  /* Better card layouts for mobile */
-  .mobile-card,
-  .card-mobile {
-    margin-bottom: 1rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 1rem;
-  }
-  
-  /* Mobile-friendly navigation with better spacing */
-  .mobile-nav {
-    padding: 1rem;
-    flex-direction: column;
-    gap: 1rem;
-    background: white;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  
-  /* Responsive text sizes for better readability */
-  h1 { 
-    font-size: 1.5rem !important; 
-    line-height: 1.3;
-    margin-bottom: 0.5rem;
-  }
-  h2 { 
-    font-size: 1.25rem !important; 
-    line-height: 1.4;
-    margin-bottom: 0.5rem;
-  }
-  h3 { 
-    font-size: 1.125rem !important; 
-    line-height: 1.4;
-    margin-bottom: 0.5rem;
-  }
-  
-  /* Better modal display on mobile */
-  .modal-content {
-    margin: 0.5rem;
-    max-height: calc(100vh - 1rem);
-    overflow-y: auto;
-    border-radius: 12px;
-  }
-  
-  /* Improve form layouts on mobile */
-  .mobile-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .mobile-form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  /* Better grid layouts for mobile */
-  .mobile-grid {
-    grid-template-columns: 1fr !important;
-    gap: 1rem;
-  }
-  
-  /* Optimize buttons for mobile */
-  .mobile-button-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 100%;
-  }
-  
-  .mobile-button-group button {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  /* Mobile responsive layout improvements */
-  .mobile-responsive-layout {
-    padding: 0 1rem;
-  }
-  
-  .mobile-responsive-layout > div {
-    margin-bottom: 1.5rem;
-  }
-  
-  /* Ensure proper viewport handling */
-  .mobile-container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    overflow-x: hidden;
-  }
-  
-  /* Better touch interactions for cards */
+  /* Better spacing for mobile cards */
   .mobile-card {
-    transition: all 0.2s ease-in-out;
-    border: 1px solid #e5e7eb;
+    margin-bottom: 1rem;
+    border-radius: 0.75rem;
   }
   
-  .mobile-card:active {
-    transform: scale(0.98);
-  }
-  
-  /* Fix text selection and zoom on mobile */
-  input[type="text"],
-  input[type="number"],
-  input[type="date"],
-  textarea,
-  select {
-    -webkit-user-select: text;
-    user-select: text;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  
-  /* Better spacing for mobile forms */
-  .mobile-form-group label {
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    display: block;
-  }
-  
-  /* Improved mobile table cards */
-  .service-mobile-card {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-  
-  .service-mobile-card .service-field {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f3f4f6;
-  }
-  
-  .service-mobile-card .service-field:last-child {
-    border-bottom: none;
-  }
-  
-  .service-mobile-card .service-field label {
-    font-weight: 500;
-    color: #6b7280;
-    font-size: 0.875rem;
-  }
-  
-  .service-mobile-card .service-field .value {
-    font-weight: 600;
-    color: #111827;
-    text-align: right;
-  }
+  /* Responsive text sizes */
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1.125rem; }
+  h3 { font-size: 1rem; }
 }
 
 :root {
