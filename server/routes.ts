@@ -9,6 +9,8 @@ import path from "path";
 import fs from "fs/promises";
 import crypto from "crypto";
 import { telegramBot } from "./telegram-bot";
+import { cacheService } from "./cache";
+import { cdnMiddleware, compressionSetup } from "./cdn";
 
 const upload = multer({ 
   dest: 'uploads/',
@@ -47,6 +49,10 @@ function validateTelegramData(telegramData: any, botToken: string): boolean {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Add CDN and compression middleware
+  app.use(cdnMiddleware);
+  app.use(compressionSetup);
   
   // Telegram Authentication
   app.post("/api/auth/telegram", async (req, res) => {
@@ -314,9 +320,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      // Try cache first
+      const cachedInvoices = await cacheService.getInvoiceListCache(req.session.userId);
+      if (cachedInvoices) {
+        return res.json(cachedInvoices);
+      }
+
       const invoices = await storage.getInvoicesByUserId(req.session.userId);
+      
+      // Cache for 5 minutes
+      await cacheService.setInvoiceListCache(req.session.userId, invoices, 300);
+      
       res.json(invoices);
     } catch (error) {
+      console.error('Error fetching invoices:', error);
       res.status(500).json({ message: "Failed to get invoices" });
     }
   });
@@ -327,13 +344,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      // Try cache first
+      const cachedInvoice = await cacheService.getInvoiceCache(req.params.id);
+      if (cachedInvoice) {
+        return res.json(cachedInvoice);
+      }
+
       const invoice = await storage.getInvoiceById(req.params.id);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
+      // Cache for 10 minutes
+      await cacheService.setInvoiceCache(req.params.id, invoice, 600);
+
       res.json(invoice);
     } catch (error) {
+      console.error('Error fetching invoice:', error);
       res.status(500).json({ message: "Failed to get invoice" });
     }
   });
@@ -382,6 +409,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return invoice with full details
       const fullInvoice = await storage.getInvoiceById(invoice.id);
+      
+      // Invalidate user's invoice list cache
+      await cacheService.invalidateInvoiceListCache(req.session.userId);
+      
+      // Cache the new invoice
+      await cacheService.setInvoiceCache(invoice.id, fullInvoice, 600);
       
       // Send Telegram notification for new invoice
       if (telegramBot) {
@@ -474,6 +507,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return updated invoice with full details
       const fullInvoice = await storage.getInvoiceById(invoiceId);
+      
+      // Invalidate related caches
+      await cacheService.invalidateInvoiceCache(invoiceId);
+      await cacheService.invalidateInvoiceListCache(req.session.userId);
+      
+      // Cache the updated invoice
+      await cacheService.setInvoiceCache(invoiceId, fullInvoice, 600);
       
       res.json(fullInvoice);
     } catch (error) {
