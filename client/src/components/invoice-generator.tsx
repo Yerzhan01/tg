@@ -12,7 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 import { 
   FileText, MessageCircle, LogOut, Edit3, Building, PenTool, Eye, 
-  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List, Download, Layers, Minus, ShoppingCart
+  Plus, Trash2, Upload, X, Bot, ExternalLink, CheckCircle, Printer, Send, List, Download, Layers, Minus, ShoppingCart, Save
 } from "lucide-react";
 import { convertNumberToKazakhWords } from "@/lib/number-converter";
 import { validateBinIin, validateIik, validateBik, validateRequiredField, validateAmount } from "@/lib/validation";
@@ -754,13 +754,13 @@ export default function InvoiceGenerator() {
         </div>
 
         {/* Buyer Information */}
-        <div className="bg-gray-50 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Building className="w-5 h-5 mr-2" />
+        <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+            <h3 className="text-lg font-semibold text-blue-900 flex items-center">
+              <Building className="w-5 h-5 mr-2 text-blue-600" />
               Данные покупателя
             </h3>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               {buyers.length > 0 && (
                 <Select
                   onValueChange={(buyerId) => {
@@ -778,7 +778,7 @@ export default function InvoiceGenerator() {
                     }
                   }}
                 >
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Выбрать из сохраненных" />
                   </SelectTrigger>
                   <SelectContent>
@@ -793,9 +793,17 @@ export default function InvoiceGenerator() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => saveBuyerMutation.mutate(invoiceData.buyer)}
+                onClick={() => {
+                  if (!invoiceData.buyer.name || !invoiceData.buyer.bin || !invoiceData.buyer.address) {
+                    toast({ title: "Ошибка", description: "Заполните все обязательные поля покупателя", variant: "destructive" });
+                    return;
+                  }
+                  saveBuyerMutation.mutate(invoiceData.buyer);
+                }}
                 disabled={saveBuyerMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 w-full sm:w-auto"
               >
+                <Save className="w-4 h-4 mr-1" />
                 {saveBuyerMutation.isPending ? 'Сохранение...' : 'Сохранить'}
               </Button>
             </div>
@@ -945,12 +953,12 @@ export default function InvoiceGenerator() {
   const renderSupplierMode = () => (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between text-secondary">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center">
-            <Building className="w-6 h-6 mr-2" />
-            Данные поставщика
+            <Building className="w-6 h-6 mr-2 text-green-600" />
+            <span className="text-green-900">Данные поставщика</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             {suppliers.length > 0 && (
               <Select
                 onValueChange={(supplierId) => {
@@ -973,7 +981,7 @@ export default function InvoiceGenerator() {
                   }
                 }}
               >
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Выбрать из сохраненных" />
                 </SelectTrigger>
                 <SelectContent>
@@ -988,9 +996,17 @@ export default function InvoiceGenerator() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => saveSupplierMutation.mutate(invoiceData.supplier)}
+              onClick={() => {
+                if (!invoiceData.supplier.name || !invoiceData.supplier.bin || !invoiceData.supplier.address) {
+                  toast({ title: "Ошибка", description: "Заполните все обязательные поля поставщика", variant: "destructive" });
+                  return;
+                }
+                saveSupplierMutation.mutate(invoiceData.supplier);
+              }}
               disabled={saveSupplierMutation.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white border-green-600 w-full sm:w-auto"
             >
+              <Save className="w-4 h-4 mr-1" />
               {saveSupplierMutation.isPending ? 'Сохранение...' : 'Сохранить'}
             </Button>
           </div>
@@ -1089,11 +1105,7 @@ export default function InvoiceGenerator() {
           </div>
         </div>
         
-        <div className="flex justify-end">
-          <Button className="btn-secondary">
-            Сохранить данные
-          </Button>
-        </div>
+
       </CardContent>
     </Card>
   );

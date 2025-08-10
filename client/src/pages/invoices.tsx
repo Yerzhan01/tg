@@ -298,7 +298,7 @@ export default function InvoicesPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredInvoices.map((invoice) => (
+            filteredInvoices.map((invoice: Invoice) => (
               <Card key={invoice.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">

@@ -93,7 +93,7 @@ export function numberToWords(num: number): string {
     result += processThreeDigits(num) + ' ';
   }
   
-  result += 'тенге 0 тиын';
+  result += 'тенге';
   
   return result.trim();
 }

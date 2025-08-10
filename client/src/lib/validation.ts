@@ -32,8 +32,8 @@ export function validateInvoiceNumber(value: string): boolean {
 
 export function formatCurrency(amount: number): string {
   return amount.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   });
 }
 
