@@ -46,7 +46,7 @@ interface InvoiceData {
     name: string;
     quantity: number;
     unit: string;
-    price: number;
+    price: number | string;
     total: number;
   }[];
 }
@@ -203,7 +203,8 @@ export default function InvoiceGenerator() {
     };
     
     if (field === 'quantity' || field === 'price') {
-      newServices[index].total = newServices[index].quantity * newServices[index].price;
+      const price = typeof newServices[index].price === 'string' ? parseFloat(newServices[index].price) || 0 : newServices[index].price;
+      newServices[index].total = newServices[index].quantity * price;
     }
     
     setInvoiceData(prev => ({
@@ -216,9 +217,9 @@ export default function InvoiceGenerator() {
     const newService = {
       id: invoiceData.services.length + 1,
       name: '',
-      quantity: 1.0,
+      quantity: 1,
       unit: 'Услуга',
-      price: 0,
+      price: '',
       total: 0
     };
     
@@ -236,7 +237,11 @@ export default function InvoiceGenerator() {
   };
 
   const getTotalAmount = () => {
-    return invoiceData.services.reduce((sum, service) => sum + service.total, 0);
+    return invoiceData.services.reduce((sum, service) => {
+      const price = typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price;
+      const total = service.quantity * price;
+      return sum + total;
+    }, 0);
   };
 
   const handleImageUpload = (file: File | null, type: 'signature' | 'stamp') => {
@@ -353,7 +358,8 @@ export default function InvoiceGenerator() {
       if (!validateAmount(service.quantity)) {
         errors.push(`Количество услуги ${index + 1} должно быть больше 0`);
       }
-      if (!validateAmount(service.price)) {
+      const price = typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price;
+      if (!validateAmount(price)) {
         errors.push(`Цена услуги ${index + 1} должна быть больше 0`);
       }
     });
@@ -385,8 +391,8 @@ export default function InvoiceGenerator() {
           name: service.name,
           quantity: service.quantity,
           unit: service.unit,
-          price: service.price,
-          total: service.total
+          price: typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price,
+          total: service.quantity * (typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price)
         })),
         totalAmount: getTotalAmount(),
         totalAmountWords: convertNumberToKazakhWords(getTotalAmount())
@@ -450,8 +456,8 @@ export default function InvoiceGenerator() {
           name: service.name,
           quantity: service.quantity,
           unit: service.unit,
-          price: service.price,
-          total: service.total
+          price: typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price,
+          total: service.quantity * (typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price)
         })),
         totalAmount: getTotalAmount(),
         totalAmountWords: convertNumberToKazakhWords(getTotalAmount())
@@ -541,8 +547,8 @@ export default function InvoiceGenerator() {
           name: service.name,
           quantity: service.quantity,
           unit: service.unit,
-          price: service.price,
-          total: service.total
+          price: typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price,
+          total: service.quantity * (typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price)
         })),
         totalAmount: getTotalAmount(),
         totalAmountWords: convertNumberToKazakhWords(getTotalAmount())
@@ -914,12 +920,13 @@ export default function InvoiceGenerator() {
                     <Input
                       type="number"
                       value={service.price}
-                      onChange={(e) => updateService(index, 'price', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => updateService(index, 'price', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
                       className="text-sm"
+                      placeholder="0"
                     />
                   </div>
                   <div className="col-span-2">
-                    <span className="text-sm font-medium">{service.total.toLocaleString('ru-RU')} ₸</span>
+                    <span className="text-sm font-medium">{(service.quantity * (typeof service.price === 'string' ? parseFloat(service.price) || 0 : service.price)).toLocaleString('ru-RU')} ₸</span>
                   </div>
                   <div className="col-span-1">
                     <Button
