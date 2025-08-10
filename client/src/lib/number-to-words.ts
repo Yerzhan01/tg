@@ -4,7 +4,7 @@ export function numberToWords(num: number): string {
   const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
   const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
   
-  if (num === 0) return 'ноль тенге 0 тиын';
+  if (num === 0) return 'ноль тенге';
   if (num < 0) return 'минус ' + numberToWords(-num);
   
   const processThreeDigits = (n: number): string => {
@@ -97,3 +97,6 @@ export function numberToWords(num: number): string {
   
   return result.trim();
 }
+
+// Экспортируем также под именем, которое используется в других файлах
+export const convertNumberToKazakhWords = numberToWords;

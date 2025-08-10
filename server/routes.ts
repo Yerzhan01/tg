@@ -234,7 +234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       console.log('POST /api/suppliers - Parsed supplier data:', supplierData);
-      const supplier = await telegramStorage.createSupplier(supplierData);
+      const supplier = await storage.createSupplier(supplierData);
       console.log('POST /api/suppliers - Created supplier:', supplier);
       
       res.json(supplier);
@@ -294,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       console.log('POST /api/buyers - Parsed buyer data:', buyerData);
-      const buyer = await telegramStorage.createBuyer(buyerData);
+      const buyer = await storage.createBuyer(buyerData);
       console.log('POST /api/buyers - Created buyer:', buyer);
       
       res.json(buyer);

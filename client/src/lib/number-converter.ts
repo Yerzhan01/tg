@@ -78,7 +78,7 @@ function getPlural(num: number, forms: string[]): string {
 
 export function convertNumberToKazakhWords(amount: number): string {
   if (amount === 0) {
-    return 'ноль тенге 00 тиын';
+    return 'ноль тенге';
   }
   
   const integerPart = Math.floor(amount);
@@ -111,13 +111,12 @@ export function convertNumberToKazakhWords(amount: number): string {
   // Добавляем валюту
   result += getPlural(integerPart, ['', 'тенге', 'тенге', 'тенге']);
   
-  // Добавляем копейки
+  // Добавляем копейки только если есть дробная часть
   if (fractionalPart > 0) {
     result += ` ${fractionalPart.toString().padStart(2, '0')} `;
     result += getPlural(fractionalPart, ['', 'тиын', 'тиын', 'тиын']);
-  } else {
-    result += ' 00 тиын';
   }
+  // Убираем автоматическое добавление "00 тиын" для целых сумм
   
   return result.trim();
 }

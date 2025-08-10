@@ -870,11 +870,12 @@ export default function InvoiceGenerator() {
           
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
+              <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-700">
                 <div className="col-span-1">№</div>
-                <div className="col-span-4">Наименование</div>
-                <div className="col-span-2">Количество</div>
-                <div className="col-span-2">Цена</div>
+                <div className="col-span-3">Наименование</div>
+                <div className="col-span-1">Кол-во</div>
+                <div className="col-span-1">Ед.</div>
+                <div className="col-span-3">Цена</div>
                 <div className="col-span-2">Сумма</div>
                 <div className="col-span-1"></div>
               </div>
@@ -882,47 +883,50 @@ export default function InvoiceGenerator() {
             
             {invoiceData.services.map((service, index) => (
               <div key={service.id} className="px-6 py-4 border-b border-gray-200 last:border-b-0">
-                <div className="grid grid-cols-12 gap-4 items-center">
+                <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-1 text-sm text-gray-600">{index + 1}</div>
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <Input
                       value={service.name}
                       onChange={(e) => updateService(index, 'name', e.target.value)}
                       className="text-sm"
+                      placeholder="Название услуги"
                     />
                   </div>
-                  <div className="col-span-2">
-                    <div className="flex space-x-2">
-                      <Input
-                        type="number"
-                        value={service.quantity}
-                        onChange={(e) => updateService(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        step="0.1"
-                        className="w-20 text-sm"
-                      />
-                      <Select
-                        value={service.unit}
-                        onValueChange={(value) => updateService(index, 'unit', value)}
-                      >
-                        <SelectTrigger className="text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Услуга">Услуга</SelectItem>
-                          <SelectItem value="шт">шт</SelectItem>
-                          <SelectItem value="кг">кг</SelectItem>
-                          <SelectItem value="м">м</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="col-span-1">
+                    <Input
+                      type="number"
+                      value={service.quantity}
+                      onChange={(e) => updateService(index, 'quantity', parseFloat(e.target.value) || 0)}
+                      step="0.1"
+                      className="text-sm"
+                      placeholder="1"
+                    />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1">
+                    <Select
+                      value={service.unit}
+                      onValueChange={(value) => updateService(index, 'unit', value)}
+                    >
+                      <SelectTrigger className="text-sm h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Услуга">Услуга</SelectItem>
+                        <SelectItem value="шт">шт</SelectItem>
+                        <SelectItem value="кг">кг</SelectItem>
+                        <SelectItem value="м">м</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-3">
                     <Input
                       type="number"
                       value={service.price}
                       onChange={(e) => updateService(index, 'price', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                      step="0.01"
                       className="text-sm"
-                      placeholder="0"
+                      placeholder="Цена"
                     />
                   </div>
                   <div className="col-span-2">
