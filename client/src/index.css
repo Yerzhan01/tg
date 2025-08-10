@@ -45,16 +45,13 @@
   }
 }
 
-/* Mobile optimization - only for screens smaller than 640px */
+/* Ensure proper touch targets on mobile */
 @media (max-width: 640px) {
-  /* Ensure proper touch targets on mobile */
   button, 
   input[type="button"], 
   input[type="submit"],
-  .mobile-button {
+  .select-trigger {
     min-height: 44px;
-    padding: 8px 12px;
-    font-size: 16px; /* Prevents zoom on iOS */
   }
   
   /* Make sure form inputs are easy to tap */
@@ -72,15 +69,30 @@
   }
   
   /* Better spacing for mobile cards */
-  .mobile-card {
+  .card-mobile {
     margin-bottom: 1rem;
     border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Mobile-friendly navigation */
+  .mobile-nav {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
   }
   
   /* Responsive text sizes */
   h1 { font-size: 1.25rem; }
   h2 { font-size: 1.125rem; }
   h3 { font-size: 1rem; }
+  
+  /* Better modal display on mobile */
+  .modal-content {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
 }
 
 :root {
