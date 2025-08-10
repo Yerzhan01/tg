@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const invoices = await telegramStorage.getInvoicesByUserId(req.session.userId);
+      const invoices = await storage.getInvoicesByUserId(req.session.userId);
       res.json(invoices);
     } catch (error) {
       res.status(500).json({ message: "Failed to get invoices" });
@@ -327,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const invoice = await telegramStorage.getInvoiceById(req.params.id);
+      const invoice = await storage.getInvoiceById(req.params.id);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
@@ -347,13 +347,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { supplier, buyer, items, ...invoiceFields } = req.body;
       
       // Create or find supplier
-      let supplierRecord = await telegramStorage.createSupplier({
+      let supplierRecord = await storage.createSupplier({
         ...supplier,
         userId: req.session.userId
       });
 
       // Create or find buyer
-      let buyerRecord = await telegramStorage.createBuyer({
+      let buyerRecord = await storage.createBuyer({
         ...buyer,
         userId: req.session.userId
       });
@@ -367,12 +367,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invoiceDate: new Date(invoiceFields.invoiceDate)
       };
 
-      const invoice = await telegramStorage.createInvoice(invoiceData);
+      const invoice = await storage.createInvoice(invoiceData);
       
       // Create invoice items
       if (items && items.length > 0) {
         for (const [index, item] of items.entries()) {
-          await telegramStorage.createInvoiceItem({
+          await storage.createInvoiceItem({
             ...item,
             invoiceId: invoice.id,
             sortOrder: index
@@ -381,12 +381,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return invoice with full details
-      const fullInvoice = await telegramStorage.getInvoiceById(invoice.id);
+      const fullInvoice = await storage.getInvoiceById(invoice.id);
       
       // Send Telegram notification for new invoice
       if (telegramBot) {
         try {
-          const user = await telegramStorage.getUserById(req.session.userId);
+          const user = await storage.getUserById(req.session.userId);
           if (user?.telegramId) {
             await telegramBot.notifyInvoiceCreated(user.telegramId, fullInvoice);
           }
@@ -407,13 +407,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Invoice Items
+  // Update invoice
+  app.put("/api/invoices/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { supplier, buyer, items, ...invoiceFields } = req.body;
+      const invoiceId = req.params.id;
+      
+      // Check if invoice exists and belongs to user
+      const existingInvoice = await storage.getInvoiceById(invoiceId);
+      if (!existingInvoice || existingInvoice.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Update or create supplier
+      let supplierRecord;
+      if (existingInvoice.supplierId) {
+        // Update existing supplier
+        supplierRecord = await storage.updateSupplier(existingInvoice.supplierId, supplier);
+      } else {
+        // Create new supplier
+        supplierRecord = await storage.createSupplier({
+          ...supplier,
+          userId: req.session.userId
+        });
+      }
+
+      // Update or create buyer
+      let buyerRecord;
+      if (existingInvoice.buyerId) {
+        // Update existing buyer
+        buyerRecord = await storage.updateBuyer(existingInvoice.buyerId, buyer);
+      } else {
+        // Create new buyer
+        buyerRecord = await storage.createBuyer({
+          ...buyer,
+          userId: req.session.userId
+        });
+      }
+
+      // Update invoice
+      const updatedInvoiceData = {
+        ...invoiceFields,
+        supplierId: supplierRecord.id,
+        buyerId: buyerRecord.id,
+        invoiceDate: new Date(invoiceFields.invoiceDate)
+      };
+
+      const updatedInvoice = await storage.updateInvoice(invoiceId, updatedInvoiceData);
+      
+      // Delete existing items and create new ones
+      await storage.deleteInvoiceItemsByInvoiceId(invoiceId);
+      
+      if (items && items.length > 0) {
+        for (const [index, item] of items.entries()) {
+          await storage.createInvoiceItem({
+            ...item,
+            invoiceId: invoiceId,
+            sortOrder: index
+          });
+        }
+      }
+
+      // Return updated invoice with full details
+      const fullInvoice = await storage.getInvoiceById(invoiceId);
+      
+      res.json(fullInvoice);
+    } catch (error) {
+      console.error('Error updating invoice:', error);
+      res.status(500).json({ message: "Failed to update invoice" });
+    }
+  });
+
   app.post("/api/invoices/:invoiceId/items", async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const item = await telegramStorage.createInvoiceItem({
+      const item = await storage.createInvoiceItem({
         ...req.body,
         invoiceId: req.params.invoiceId
       });
@@ -430,7 +505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const deleted = await telegramStorage.deleteInvoiceItem(req.params.id);
+      const deleted = await storage.deleteInvoiceItem(req.params.id);
       if (!deleted) {
         return res.status(404).json({ message: "Invoice item not found" });
       }
@@ -620,7 +695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const originalInvoice = await telegramStorage.getInvoiceById(req.params.id);
+      const originalInvoice = await storage.getInvoiceById(req.params.id);
       if (!originalInvoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
@@ -638,11 +713,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'draft'
       });
 
-      const newInvoice = await telegramStorage.createInvoice(newInvoiceData);
+      const newInvoice = await storage.createInvoice(newInvoiceData);
       
       // Copy items
       for (const item of originalInvoice.items) {
-        await telegramStorage.createInvoiceItem({
+        await storage.createInvoiceItem({
           invoiceId: newInvoice.id,
           name: item.name,
           quantity: item.quantity,
@@ -666,13 +741,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const invoice = await telegramStorage.getInvoiceById(req.params.id);
+      const invoice = await storage.getInvoiceById(req.params.id);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
       // Get user's Telegram ID
-      const user = await telegramStorage.getUserByTelegramId(req.session.userId);
+      const user = await storage.getUserById(req.session.userId);
       if (!user?.telegramId) {
         return res.status(400).json({ message: "Telegram account not linked" });
       }
@@ -688,6 +763,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send invoice to Telegram with updated route for frontend
+  app.post("/api/telegram/send-invoice", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { invoiceId } = req.body;
+      const invoice = await storage.getInvoiceById(invoiceId);
+      if (!invoice || invoice.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Get user's Telegram ID
+      const user = await storage.getUserById(req.session.userId);
+      if (!user?.telegramId) {
+        return res.status(400).json({ message: "Telegram account not linked" });
+      }
+
+      // Send to Telegram bot
+      if (telegramBot) {
+        await telegramBot.sendInvoice(user.telegramId, invoice);
+      }
+
+      res.json({ message: "Invoice sent to Telegram" });
+    } catch (error) {
+      console.error('Error sending to Telegram:', error);
+      res.status(500).json({ message: "Failed to send invoice to Telegram" });
+    }
+  });
+
+  // PDF download endpoint for web app
+  app.get("/api/invoices/:id/pdf", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const invoice = await storage.getInvoiceById(req.params.id);
+      if (!invoice || invoice.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Generate PDF using jsPDF
+      const jsPDF = (await import('jspdf')).default;
+      
+      const pdf = new jsPDF();
+      pdf.text(`Счет на оплату №${invoice.invoiceNumber}`, 20, 20);
+      pdf.text(`Дата: ${invoice.invoiceDate.toLocaleDateString('ru-RU')}`, 20, 30);
+      pdf.text(`Поставщик: ${invoice.supplier?.name || 'Неизвестно'}`, 20, 40);
+      pdf.text(`Покупатель: ${invoice.buyer?.name || 'Неизвестно'}`, 20, 50);
+      pdf.text(`Сумма: ${Number(invoice.totalAmount).toLocaleString('ru-RU')} ₸`, 20, 60);
+      
+      // Add services
+      let yPos = 80;
+      pdf.text('Услуги:', 20, yPos);
+      yPos += 10;
+      
+      invoice.items?.forEach((item, index) => {
+        pdf.text(`${index + 1}. ${item.name} - ${item.quantity} ${item.unit} × ${item.price} = ${item.total} ₸`, 20, yPos);
+        yPos += 10;
+      });
+      
+      const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Счет_${invoice.invoiceNumber}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
   // Internal PDF generation endpoint for Telegram bot
   app.post("/api/invoices/:id/pdf", async (req, res) => {
     try {
@@ -700,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const requestUserId = isInternalRequest ? userId : req.session.userId;
       
-      const invoice = await telegramStorage.getInvoiceById(req.params.id);
+      const invoice = await storage.getInvoiceById(req.params.id);
       if (!invoice || invoice.userId !== requestUserId) {
         return res.status(404).json({ message: "Invoice not found" });
       }
@@ -749,7 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const requestUserId = isInternalRequest ? userId : req.session.userId;
       
-      const invoice = await telegramStorage.getInvoiceById(req.params.id);
+      const invoice = await storage.getInvoiceById(req.params.id);
       if (!invoice || invoice.userId !== requestUserId) {
         return res.status(404).json({ message: "Invoice not found" });
       }

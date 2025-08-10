@@ -6,6 +6,14 @@ This is a web application for generating official invoices (счета-факт�
 
 ## Recent Changes (August 2025)
 
+- **Complete API Route Fix (August 10, 2025)**: Comprehensive audit and fix of all invoice-related API endpoints:
+  - **Fixed Database Connectivity**: All API routes now use correct `storage` instead of `telegramStorage`
+  - **Restored "Мои счета" Section**: Fixed invoice listing, editing, PDF/Excel generation routes
+  - **Added Invoice Editing**: Created edit-invoice.tsx page with proper PUT endpoint for updates
+  - **Improved PDF Generation**: Added GET route for direct PDF downloads from web interface
+  - **Enhanced Telegram Integration**: Separated web app routes from bot internal routes
+  - **Fixed Currency Display**: Removed "00 тиын" from amount-to-words conversion
+  - **Improved UI Layout**: Fixed services table column distribution to prevent field overlapping
 - **Smart Database Configuration**: Fixed production/development database routing:
   - **Production Environment**: Single unified database for all operations (web app, Telegram bot, users)
   - **Development Environment**: Separate databases - production DB for Telegram bot, development DB for web app
@@ -13,7 +21,6 @@ This is a web application for generating official invoices (счета-факт�
   - **Unified User Management**: In production all users/data in same database, in development separate for testing
 - **Domain Configuration**: Updated all Telegram bot references to use kazinvoice.brnd.kz exclusively
 - **Production Deployment Ready**: All components automatically use production database when deployed
-- **Error Resolution**: Fixed all LSP errors and database connection issues
 
 ## User Preferences
 
