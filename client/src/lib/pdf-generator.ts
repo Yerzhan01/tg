@@ -202,24 +202,109 @@ export class PDFGenerator {
     pdf.setFontSize(this.L.FONT_SIZE.M);
     pdf.setFont('PTSans', 'normal');
     const labelWidth = 35;
+    const lineHeight = 4;
 
     // Поставщик - более подробно как в образце
     pdf.setFont('PTSans', 'bold');
     pdf.text('Поставщик:', this.L.MARGIN, currentY);
     pdf.setFont('PTSans', 'normal');
-    const supplierText = `БИН/ИИН ${data.supplier.bin}, ${data.supplier.name}, ${data.supplier.address}`;
-    const supplierLines = pdf.splitTextToSize(supplierText, this.L.CONTENT_WIDTH - labelWidth);
-    pdf.text(supplierLines, this.L.MARGIN + labelWidth, currentY);
-    currentY += Math.max(supplierLines.length * 3.5, 8);
+    
+    // Разбиваем длинный текст на части для лучшего размещения
+    const supplierBinText = `БИН/ИИН ${data.supplier.bin}`;
+    const supplierNameText = data.supplier.name;
+    const supplierAddressText = data.supplier.address;
+    
+    // Если БИН очень длинный, разделяем на строки
+    const binLines = pdf.splitTextToSize(supplierBinText, this.L.CONTENT_WIDTH - labelWidth);
+    const nameLines = pdf.splitTextToSize(supplierNameText, this.L.CONTENT_WIDTH - labelWidth);
+    const addressLines = pdf.splitTextToSize(supplierAddressText, this.L.CONTENT_WIDTH - labelWidth);
+    
+    let textY = currentY;
+    
+    // Выводим БИН
+    if (Array.isArray(binLines)) {
+      binLines.forEach((line, index) => {
+        pdf.text(line, this.L.MARGIN + labelWidth, textY + (index * lineHeight));
+      });
+      textY += binLines.length * lineHeight;
+    } else {
+      pdf.text(binLines, this.L.MARGIN + labelWidth, textY);
+      textY += lineHeight;
+    }
+    
+    // Выводим название
+    if (Array.isArray(nameLines)) {
+      nameLines.forEach((line, index) => {
+        pdf.text(line, this.L.MARGIN + labelWidth, textY + (index * lineHeight));
+      });
+      textY += nameLines.length * lineHeight;
+    } else {
+      pdf.text(nameLines, this.L.MARGIN + labelWidth, textY);
+      textY += lineHeight;
+    }
+    
+    // Выводим адрес
+    if (Array.isArray(addressLines)) {
+      addressLines.forEach((line, index) => {
+        pdf.text(line, this.L.MARGIN + labelWidth, textY + (index * lineHeight));
+      });
+      textY += addressLines.length * lineHeight;
+    } else {
+      pdf.text(addressLines, this.L.MARGIN + labelWidth, textY);
+      textY += lineHeight;
+    }
+    
+    currentY = textY + 4;
 
-    // Покупатель - более подробно как в образце  
+    // Покупатель - аналогично
     pdf.setFont('PTSans', 'bold');
     pdf.text('Покупатель:', this.L.MARGIN, currentY);
     pdf.setFont('PTSans', 'normal');
-    const buyerText = `БИН/ИИН ${data.buyer.bin}, ${data.buyer.name}, ${data.buyer.address}`;
-    const buyerLines = pdf.splitTextToSize(buyerText, this.L.CONTENT_WIDTH - labelWidth);
-    pdf.text(buyerLines, this.L.MARGIN + labelWidth, currentY);
-    currentY += Math.max(buyerLines.length * 3.5, 8);
+    
+    const buyerBinText = `БИН/ИИН ${data.buyer.bin}`;
+    const buyerNameText = data.buyer.name;
+    const buyerAddressText = data.buyer.address;
+    
+    const buyerBinLines = pdf.splitTextToSize(buyerBinText, this.L.CONTENT_WIDTH - labelWidth);
+    const buyerNameLines = pdf.splitTextToSize(buyerNameText, this.L.CONTENT_WIDTH - labelWidth);
+    const buyerAddressLines = pdf.splitTextToSize(buyerAddressText, this.L.CONTENT_WIDTH - labelWidth);
+    
+    textY = currentY;
+    
+    // Выводим БИН покупателя
+    if (Array.isArray(buyerBinLines)) {
+      buyerBinLines.forEach((line, index) => {
+        pdf.text(line, this.L.MARGIN + labelWidth, textY + (index * lineHeight));
+      });
+      textY += buyerBinLines.length * lineHeight;
+    } else {
+      pdf.text(buyerBinLines, this.L.MARGIN + labelWidth, textY);
+      textY += lineHeight;
+    }
+    
+    // Выводим название покупателя
+    if (Array.isArray(buyerNameLines)) {
+      buyerNameLines.forEach((line, index) => {
+        pdf.text(line, this.L.MARGIN + labelWidth, textY + (index * lineHeight));
+      });
+      textY += buyerNameLines.length * lineHeight;
+    } else {
+      pdf.text(buyerNameLines, this.L.MARGIN + labelWidth, textY);
+      textY += lineHeight;
+    }
+    
+    // Выводим адрес покупателя
+    if (Array.isArray(buyerAddressLines)) {
+      buyerAddressLines.forEach((line, index) => {
+        pdf.text(line, this.L.MARGIN + labelWidth, textY + (index * lineHeight));
+      });
+      textY += buyerAddressLines.length * lineHeight;
+    } else {
+      pdf.text(buyerAddressLines, this.L.MARGIN + labelWidth, textY);
+      textY += lineHeight;
+    }
+    
+    currentY = textY + 4;
 
     // Договор
     pdf.setFont('PTSans', 'bold');
@@ -233,7 +318,7 @@ export class PDFGenerator {
   
   private static drawServicesTable(pdf: jsPDF, data: InvoicePDFData, y: number): number {
     // Размеры колонок под ширину A4 (170mm доступной ширины)
-    const colWidths = [12, 15, 70, 15, 15, 20, 23]; // Всего 170mm
+    const colWidths = [12, 15, 60, 18, 15, 25, 25]; // Всего 170mm - увеличили колонки цены и суммы
     let colX = this.L.MARGIN;
     const colXPositions: number[] = [];
     
@@ -243,7 +328,7 @@ export class PDFGenerator {
       colX += width;
     });
     
-    const rowHeight = 8;
+    const minRowHeight = 8;
     let currentY = y;
     
     // Заголовок таблицы - только границы, без заливки
@@ -254,16 +339,16 @@ export class PDFGenerator {
     const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
     
     headers.forEach((header, index) => {
-      pdf.rect(colXPositions[index], currentY, colWidths[index], rowHeight, 'D');
+      pdf.rect(colXPositions[index], currentY, colWidths[index], minRowHeight, 'D');
       pdf.text(header, colXPositions[index] + colWidths[index]/2, currentY + 5, { align: 'center' });
     });
     
-    currentY += rowHeight;
+    currentY += minRowHeight;
     
     // Строки данных
     pdf.setTextColor(0, 0, 0);
     pdf.setFont('PTSans', 'normal');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8); // Уменьшили размер шрифта для лучшего размещения
     
     data.services.forEach((service, index) => {
       const rowData = [
@@ -278,17 +363,44 @@ export class PDFGenerator {
       
       const aligns: ('center' | 'left' | 'right')[] = ['center', 'center', 'left', 'right', 'center', 'right', 'right'];
       
+      // Вычисляем нужную высоту строки на основе самого длинного текста
+      let maxLinesInRow = 1;
+      rowData.forEach((cellData, colIndex) => {
+        if (cellData) {
+          const lines = pdf.splitTextToSize(cellData, colWidths[colIndex] - 4);
+          if (Array.isArray(lines)) {
+            maxLinesInRow = Math.max(maxLinesInRow, lines.length);
+          }
+        }
+      });
+      
+      const rowHeight = Math.max(minRowHeight, maxLinesInRow * 4 + 2);
+      
+      // Рисуем ячейки с адаптивной высотой
       rowData.forEach((cellData, colIndex) => {
         pdf.rect(colXPositions[colIndex], currentY, colWidths[colIndex], rowHeight, 'D');
         
-        let textX = colXPositions[colIndex] + 2;
-        if (aligns[colIndex] === 'center') {
-          textX = colXPositions[colIndex] + colWidths[colIndex]/2;
-        } else if (aligns[colIndex] === 'right') {
-          textX = colXPositions[colIndex] + colWidths[colIndex] - 2;
+        if (cellData) {
+          const lines = pdf.splitTextToSize(cellData, colWidths[colIndex] - 4);
+          
+          let textX = colXPositions[colIndex] + 2;
+          if (aligns[colIndex] === 'center') {
+            textX = colXPositions[colIndex] + colWidths[colIndex]/2;
+          } else if (aligns[colIndex] === 'right') {
+            textX = colXPositions[colIndex] + colWidths[colIndex] - 2;
+          }
+          
+          // Начальная позиция по Y для многострочного текста
+          const startY = currentY + 4;
+          
+          if (Array.isArray(lines)) {
+            lines.forEach((line, lineIndex) => {
+              pdf.text(line, textX, startY + (lineIndex * 4), { align: aligns[colIndex] });
+            });
+          } else {
+            pdf.text(lines, textX, startY, { align: aligns[colIndex] });
+          }
         }
-        
-        pdf.text(cellData, textX, currentY + 5, { align: aligns[colIndex] });
       });
       
       currentY += rowHeight;
@@ -301,14 +413,14 @@ export class PDFGenerator {
     
     // Объединенная ячейка для "Итого:" (первые 6 колонок)
     const totalColWidth = colWidths.slice(0, 6).reduce((sum, width) => sum + width, 0);
-    pdf.rect(colXPositions[0], currentY, totalColWidth, rowHeight, 'D');
+    pdf.rect(colXPositions[0], currentY, totalColWidth, minRowHeight, 'D');
     pdf.text('Итого:', colXPositions[0] + totalColWidth - 5, currentY + 5, { align: 'right' });
     
     // Отдельная ячейка для суммы (7-я колонка)
-    pdf.rect(colXPositions[6], currentY, colWidths[6], rowHeight, 'D');
+    pdf.rect(colXPositions[6], currentY, colWidths[6], minRowHeight, 'D');
     pdf.text(this.formatMoney(data.totalAmount), colXPositions[6] + colWidths[6] - 5, currentY + 5, { align: 'right' });
     
-    return currentY + rowHeight;
+    return currentY + minRowHeight;
   }
 
   private static drawTotalInfo(pdf: jsPDF, data: InvoicePDFData, y: number): number {
