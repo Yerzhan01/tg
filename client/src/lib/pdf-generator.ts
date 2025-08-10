@@ -318,7 +318,7 @@ export class PDFGenerator {
   
   private static drawServicesTable(pdf: jsPDF, data: InvoicePDFData, y: number): number {
     // Размеры колонок под ширину A4 (170mm доступной ширины)
-    const colWidths = [12, 15, 60, 18, 15, 25, 25]; // Всего 170mm - увеличили колонки цены и суммы
+    const colWidths = [10, 12, 50, 15, 12, 35, 36]; // Всего 170mm - значительно увеличили колонки цены и суммы
     let colX = this.L.MARGIN;
     const colXPositions: number[] = [];
     
@@ -537,6 +537,13 @@ export class PDFGenerator {
   }
 
   private static formatMoney(amount: number): string {
+    // Для больших чисел убираем лишние нули после запятой и используем компактное форматирование
+    if (amount >= 1000000) {
+      return new Intl.NumberFormat('ru-RU', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(amount);
+    }
     return new Intl.NumberFormat('ru-RU', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
